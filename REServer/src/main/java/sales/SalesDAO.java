@@ -1,6 +1,5 @@
 package sales;
 
-import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,6 +7,7 @@ import java.util.Optional;
 
 public class SalesDAO {
 
+    // TODO: Change this!!
     private static final String JDBC_URL = "jdbc:postgresql://localhost:5432/PropertyData";
     private static final String JDBC_USER = "yk";
     private static final String JDBC_PASSWORD = "1234";

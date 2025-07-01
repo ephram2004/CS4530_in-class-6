@@ -2,7 +2,7 @@ package sales;
 
 import java.sql.Date;
 
-// Simple class to provide test data in SalesDAO
+// "Simple" class to provide test data in SalesDAO
 
 public class HomeSale {
     public String councilName, address, propertyType, propertyName, areaType, zoning,
@@ -33,9 +33,5 @@ public class HomeSale {
         this.natureOfProperty = natureOfProperty;
         this.primaryPurpose = primaryPurpose;
         this.legalDescription = legalDescription;
-    }
-
-    // needed for JSON conversion
-    public HomeSale() {
     }
 }

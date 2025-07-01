@@ -1,14 +1,14 @@
 -- init/01-schema.sql
 
 CREATE TABLE property_sales (
-    property_id           SERIAL PRIMARY KEY,
+    property_id           INTEGER,
     download_date         DATE,
     council_name          TEXT,
     purchase_price        NUMERIC(12, 2),
     address               TEXT,
-    post_code             VARCHAR(10),
+    post_code             INTEGER,
     property_type         TEXT,
-    strata_lot_number     TEXT,
+    strata_lot_number     INTEGER,
     property_name         TEXT,
     area                  NUMERIC(10, 2),
     area_type             TEXT,

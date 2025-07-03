@@ -166,6 +166,24 @@ public class SalesDAO {
         return sales;
     }
 
+    public int getPriceHistory(int propertyId) throws SQLException {
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
+             PreparedStatement stmt = conn
+                     .prepareStatement(
+                             "SELECT\n" +
+                                     "  MAX(purchase_price) - MIN(purchase_price) AS price_change\n" +
+                                     "FROM property_sales\n" +
+                                     "WHERE property_id = ?")) {
+            stmt.setInt(1, propertyId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next() && !rs.wasNull()) {
+                int priceChange = rs.getInt("price_change");
+                return priceChange;
+            } else {
+                return 0;
+            }
+        }
+
     public List<HomeSale> filterSalesByCriteria(String councilName, String propertyType,
             int minPrice, int maxPrice, String areaType) throws SQLException {
         List<HomeSale> sales = new ArrayList<HomeSale>();

@@ -58,6 +58,9 @@ public class REServer {
             app.get("/sales/postcode/{postcode}", ctx -> {
                 salesHandler.findSaleByPostCode(ctx, Integer.parseInt(ctx.pathParam("postcode")));
             });
+            app.get("sales/propertyId/{propertyID}", ctx -> {
+                salesHandler.findPriceHistoryByPropertyId(ctx, Integer.parseInt(ctx.pathParam("propertyID")));
+            });
         });
 
     }

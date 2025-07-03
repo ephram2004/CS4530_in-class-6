@@ -1,10 +1,11 @@
 -- init/01-schema.sql
 
 CREATE TABLE property_sales (
+    sale_id               INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     property_id           INTEGER,
     download_date         DATE,
     council_name          TEXT,
-    purchase_price        NUMERIC(12, 2),
+    purchase_price        INTEGER,
     address               TEXT,
     post_code             INTEGER,
     property_type         TEXT,

@@ -1,3 +1,4 @@
+package main;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -9,6 +10,8 @@ import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+
+import helper.Helper;
 
 // TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
@@ -59,45 +62,45 @@ public class Main {
                     // Iterate over input CSV records
                     int count = 0;
                     for (final CSVRecord record : parser) {
-                        Integer propId = parseIntSafe(record.get("property_id"));
+                        Integer propId = Helper.parseIntSafe(record.get("property_id"));
                         if (propId == null) {
                             skippedRows.add(record);
                             continue;
                         }
 
-                        stmt.setObject(1, propId);
+                        stmt.setInt(1, propId);
                         stmt.setDate(2,
-                                parseDateSafe(record.get("download_date"))); // yyyy-mm-dd
+                                Helper.parseDateSafe(record.get("download_date")));
                         stmt.setString(3,
-                                parseStringSafe(record.get("council_name")));
+                                Helper.parseStringSafe(record.get("council_name")));
                         stmt.setObject(4,
-                                parseIntSafe(record.get("purchase_price")));
+                                Helper.parseIntSafe(record.get("purchase_price")));
                         stmt.setString(5,
-                                parseStringSafe(record.get("address")));
+                                Helper.parseStringSafe(record.get("address")));
                         stmt.setObject(6,
-                                parseIntSafe(record.get("post_code")));
+                                Helper.parseIntSafe(record.get("post_code")));
                         stmt.setString(7,
-                                parseStringSafe(record.get("property_type")));
+                                Helper.parseStringSafe(record.get("property_type")));
                         stmt.setObject(8,
-                                parseIntSafe(record.get("strata_lot_number")));
+                                Helper.parseIntSafe(record.get("strata_lot_number")));
                         stmt.setString(9,
-                                parseStringSafe(record.get("property_name")));
+                                Helper.parseStringSafe(record.get("property_name")));
                         stmt.setObject(10,
-                                parseDoubleSafe(record.get("area")));
+                                Helper.parseDoubleSafe(record.get("area")));
                         stmt.setString(11,
-                                parseStringSafe(record.get("area_type")));
+                                Helper.parseStringSafe(record.get("area_type")));
                         stmt.setDate(12,
-                                parseDateSafe(record.get("contract_date")));
+                                Helper.parseDateSafe(record.get("contract_date")));
                         stmt.setDate(13,
-                                parseDateSafe(record.get("settlement_date")));
+                                Helper.parseDateSafe(record.get("settlement_date")));
                         stmt.setString(14,
-                                parseStringSafe(record.get("zoning")));
+                                Helper.parseStringSafe(record.get("zoning")));
                         stmt.setString(15,
-                                parseStringSafe(record.get("nature_of_property")));
+                                Helper.parseStringSafe(record.get("nature_of_property")));
                         stmt.setString(16,
-                                parseStringSafe(record.get("primary_purpose")));
+                                Helper.parseStringSafe(record.get("primary_purpose")));
                         stmt.setString(17,
-                                parseStringSafe(record.get("legal_description")));
+                                Helper.parseStringSafe(record.get("legal_description")));
 
                         stmt.addBatch();
 
@@ -125,38 +128,6 @@ public class Main {
             }
         } catch (IOException | SQLException e) {
             System.out.println("File open failed " + e.getMessage());
-        }
-    }
-
-    private static Integer parseIntSafe(String value) {
-        try {
-            return (value == null || value.isBlank()) ? null : Integer.parseInt(value.trim());
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private static Double parseDoubleSafe(String value) {
-        try {
-            return (value == null || value.isBlank()) ? null : Double.parseDouble(value.trim());
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private static Date parseDateSafe(String value) {
-        try {
-            return (value == null || value.isBlank()) ? null : Date.valueOf(value.trim());
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
-
-    private static String parseStringSafe(String value) {
-        try {
-            return (value == null || value.isBlank()) ? null : value;
-        } catch (IllegalArgumentException e) {
-            return null;
         }
     }
 }

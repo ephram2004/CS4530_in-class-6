@@ -14,7 +14,7 @@ public class REServer {
         // API implementation
         SalesController salesHandler = new SalesController(sales);
 
-        // start Javalin on port 7070
+        // start Javalin on port 707  0
         var app = Javalin.create()
                 .get("/", ctx -> ctx.result("Real Estate server is running"))
                 .start(7070);
@@ -61,7 +61,10 @@ public class REServer {
             app.get("sales/propertyId/{propertyID}", ctx -> {
                 salesHandler.findPriceHistoryByPropertyId(ctx, Integer.parseInt(ctx.pathParam("propertyID")));
             });
+            // Get average sale price for a specific postcode
+            app.get("/sales/average/{postcode}", ctx -> {
+                salesHandler.averagePrice(ctx, Integer.parseInt(ctx.pathParam("postcode")));
+            });
         });
-
     }
 }

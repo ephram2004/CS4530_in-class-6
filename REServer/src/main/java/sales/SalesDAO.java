@@ -1,5 +1,7 @@
 package sales;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -242,5 +244,32 @@ public class SalesDAO {
             }
         }
         return sales;
+    }
+
+    public double getAveragePrice(int postCode) throws SQLException {   
+        //List<HomeSale> sales = new ArrayList<HomeSale>();
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
+                PreparedStatement stmt = conn
+                        .prepareStatement(
+                                "SELECT AVG(purchase_price) AS average FROM property_sales WHERE post_code = ?")) {
+            stmt.setInt(1, postCode);
+            ResultSet rs = stmt.executeQuery();
+            System.out.println(rs);
+            if (rs.next() && !rs.wasNull()) {
+                double avg = rs.getDouble("average");
+                return round(avg, 2);
+            }
+            else {
+                return 0;
+            }
+        }
+    }
+
+    private static double round(double value, int places) {
+        if (places < 0) throw new IllegalArgumentException();
+
+        BigDecimal bd = BigDecimal.valueOf(value);
+        bd = bd.setScale(places, RoundingMode.HALF_UP);
+        return bd.doubleValue();
     }
 }

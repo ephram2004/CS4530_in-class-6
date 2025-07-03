@@ -110,4 +110,15 @@ public class SalesController {
             ctx.status(400);
         }
     }
+
+    public void averagePrice(Context ctx, int postCode) {
+        try {
+            double averagePrice = homeSales.getAveragePrice(postCode);
+            ctx.result(Double.toString(averagePrice));
+        } catch (SQLException e) {
+            ctx.result("Error getting average: " + e.getMessage());
+            ctx.status(400);
+        }
+    }
+    
 }

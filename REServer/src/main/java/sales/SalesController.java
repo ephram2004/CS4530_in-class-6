@@ -89,6 +89,22 @@ public class SalesController {
                 ctx.status(200);
         } catch (SQLException e) {
             ctx.result("Error retrieving price difference: " + e.getMessage());
+
+    public void filterSalesByCriteria(Context ctx, String councilName, String propertyType, int minPrice, int maxPrice,
+            String areaType) {
+        try {
+            List<HomeSale> sales = homeSales.filterSalesByCriteria(councilName, propertyType, minPrice, maxPrice,
+                    areaType);
+
+            if (sales.isEmpty()) {
+                ctx.result("No sales found");
+                ctx.status(404);
+            } else {
+                ctx.json(sales);
+                ctx.status(200);
+            }
+        } catch (SQLException e) {
+            ctx.result("Error retrieving sale: " + e.getMessage());
             ctx.status(400);
         }
     }

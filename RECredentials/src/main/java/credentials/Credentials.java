@@ -7,7 +7,8 @@ public class Credentials {
 
     static {
         dotenv = Dotenv.configure()
-                .directory("../../../../REDatabase")
+                .directory("REDatabase")
+                .filename(".env")
                 .load();
     }
 

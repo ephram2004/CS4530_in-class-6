@@ -5,12 +5,7 @@ import io.javalin.config.JavalinConfig;
 import sales.SalesDAO;
 import sales.SalesController;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class REServer {
-    private static final Logger LOG = LoggerFactory.getLogger(REServer.class);
-
     public static void main(String[] args) {
 
         // in memory test data store

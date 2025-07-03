@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import helper.Helper;
+import credentials.Credentials;;
 
 // TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
@@ -24,11 +25,10 @@ public class Main {
 
     private static final String PATH_TO_FILE = "/Users/ejacquin/Desktop/Northeastern/School_Work/"
             + "Summer_II_2025/CS4530/In-Class/CS4530_in-class-6/nsw_property_data.csv";
-
-    // TODO: Change this!!
-    private static final String JDBC_URL = "jdbc:postgresql://localhost:5432/PropertyData";
-    private static final String JDBC_USER = "team-6";
-    private static final String JDBC_PASSWORD = "1234";
+    private static final String JDBC_URL = "jdbc:postgresql://localhost:5432/" +
+            Credentials.get("POSTGRES_DB");
+    private static final String JDBC_USER = Credentials.get("POSTGRES_USER");
+    private static final String JDBC_PASSWORD = Credentials.get("POSTGRES_PASSWORD");
 
     public static void main(String[] args) {
 

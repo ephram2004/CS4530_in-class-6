@@ -5,12 +5,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import credentials.Credentials;
+
 public class SalesDAO {
 
-    // TODO: Change this!!
-    private static final String JDBC_URL = "jdbc:postgresql://localhost:5432/PropertyData";
-    private static final String JDBC_USER = "yk";
-    private static final String JDBC_PASSWORD = "1234";
+    private static final String JDBC_URL = "jdbc:postgresql://localhost:5432/" +
+            Credentials.get("POSTGRES_DB");
+    private static final String JDBC_USER = Credentials.get("POSTGRES_USER");
+    private static final String JDBC_PASSWORD = Credentials.get("POSTGRES_PASSWORD");
 
     public boolean newSale(HomeSale homeSale) throws SQLException {
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);

@@ -183,6 +183,7 @@ public class SalesDAO {
                 return 0;
             }
         }
+    }
 
     public List<HomeSale> filterSalesByCriteria(String councilName, String propertyType,
             int minPrice, int maxPrice, String areaType) throws SQLException {

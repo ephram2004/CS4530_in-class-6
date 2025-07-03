@@ -1,10 +1,10 @@
 package sales;
 
-import io.javalin.http.Context;
-
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
+
+import io.javalin.http.Context;
 
 public class SalesController {
 
@@ -89,6 +89,8 @@ public class SalesController {
                 ctx.status(200);
         } catch (SQLException e) {
             ctx.result("Error retrieving price difference: " + e.getMessage());
+        }
+    }
 
     public void filterSalesByCriteria(Context ctx, String councilName, String propertyType, int minPrice, int maxPrice,
             String areaType) {

@@ -9,10 +9,17 @@ import credentials.Credentials;
 
 public class SalesDAO {
 
+<<<<<<< Updated upstream
     private static final String JDBC_URL = "jdbc:postgresql://localhost:5432/" +
             Credentials.get("POSTGRES_DB");
     private static final String JDBC_USER = Credentials.get("POSTGRES_USER");
     private static final String JDBC_PASSWORD = Credentials.get("POSTGRES_PASSWORD");
+=======
+    // TODO: Change this!!
+    private static final String JDBC_URL = "jdbc:postgresql://10.0.100.74:5432/PropertyData";
+    private static final String JDBC_USER = "team-6";
+    private static final String JDBC_PASSWORD = "1234";
+>>>>>>> Stashed changes
 
     public boolean newSale(HomeSale homeSale) throws SQLException {
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
@@ -164,5 +171,24 @@ public class SalesDAO {
             }
         }
         return sales;
+    }
+
+    public int getPriceHistory(int propertyId) throws SQLException {
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
+             PreparedStatement stmt = conn
+                     .prepareStatement(
+                             "SELECT\n" +
+                                     "  MAX(purchase_price) - MIN(purchase_price) AS price_change\n" +
+                                     "FROM property_sales\n" +
+                                     "WHERE property_id = ?")) {
+            stmt.setInt(1, propertyId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next() && !rs.wasNull()) {
+                int priceChange = rs.getInt("price_change");
+                return priceChange;
+            } else {
+                return 0;
+            }
+        }
     }
 }

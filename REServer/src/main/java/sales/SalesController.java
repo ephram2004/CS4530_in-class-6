@@ -81,4 +81,15 @@ public class SalesController {
             ctx.status(400);
         }
     }
+
+    public void findPriceHistoryByPropertyId(Context ctx, int propertyId) {
+        try {
+            int priceDiff = homeSales.getPriceHistory(propertyId);
+                ctx.result(String.valueOf(priceDiff));
+                ctx.status(200);
+        } catch (SQLException e) {
+            ctx.result("Error retrieving price difference: " + e.getMessage());
+            ctx.status(400);
+        }
+    }
 }

@@ -23,23 +23,23 @@ public class SalesDAO {
                                 "contract_date, settlement_date, zoning, nature_of_property, " +
                                 "primary_purpose, legal_description) " +
                                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
-            stmt.setInt(1, homeSale.propertyId);
-            stmt.setDate(2, homeSale.downloadDate);
-            stmt.setString(3, homeSale.councilName);
-            stmt.setInt(4, homeSale.purchasePrice);
-            stmt.setString(5, homeSale.address);
-            stmt.setInt(6, homeSale.postCode);
-            stmt.setString(7, homeSale.propertyType);
-            stmt.setInt(8, homeSale.strataLotNumber);
-            stmt.setString(9, homeSale.propertyName);
-            stmt.setDouble(10, homeSale.area);
-            stmt.setString(11, homeSale.areaType);
-            stmt.setDate(12, homeSale.contractDate);
-            stmt.setDate(13, homeSale.settlementDate);
-            stmt.setString(14, homeSale.zoning);
-            stmt.setString(15, homeSale.natureOfProperty);
-            stmt.setString(16, homeSale.primaryPurpose);
-            stmt.setString(17, homeSale.legalDescription);
+            stmt.setInt(1, homeSale.getPropertyId());
+            stmt.setDate(2, homeSale.getDownloadDate());
+            stmt.setString(3, homeSale.getCouncilName());
+            stmt.setInt(4, homeSale.getPurchasePrice());
+            stmt.setString(5, homeSale.getAddress());
+            stmt.setInt(6, homeSale.getPostCode());
+            stmt.setString(7, homeSale.getPropertyType());
+            stmt.setInt(8, homeSale.getStrataLotNumber());
+            stmt.setString(9, homeSale.getPropertyName());
+            stmt.setDouble(10, homeSale.getArea());
+            stmt.setString(11, homeSale.getAreaType());
+            stmt.setDate(12, homeSale.getContractDate());
+            stmt.setDate(13, homeSale.getSettlementDate());
+            stmt.setString(14, homeSale.getZoning());
+            stmt.setString(15, homeSale.getNatureOfProperty());
+            stmt.setString(16, homeSale.getPrimaryPurpose());
+            stmt.setString(17, homeSale.getLegalDescription());
             stmt.executeUpdate();
         }
         return true;

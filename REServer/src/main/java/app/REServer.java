@@ -30,20 +30,21 @@ public class REServer {
             });
             // get all sales records - could be big!
             app.get("/sales", ctx -> {
-                // Extract all possible filter params
                 String councilName = ctx.queryParam("councilname");
                 String propertyType = ctx.queryParam("propertytype");
                 String areaType = ctx.queryParam("areatype");
-                int minPrice = ctx.queryParam("minprice") != null ? Integer.parseInt(ctx.queryParam("minprice"))
+                int minPrice = ctx.queryParam("minprice") != null
+                        ? Integer.parseInt(ctx.queryParam("minprice"))
                         : -1;
-                int maxPrice = ctx.queryParam("maxprice") != null ? Integer.parseInt(ctx.queryParam("maxprice"))
+                int maxPrice = ctx.queryParam("maxprice") != null
+                        ? Integer.parseInt(ctx.queryParam("maxprice"))
                         : -1;
 
-                // If no filters, return all sales. Otherwise, filter.
-                boolean hasFilter = councilName != null || propertyType != null || areaType != null || minPrice < 0
-                        || maxPrice < 0;
+                boolean hasFilter = councilName != null || propertyType != null
+                        || areaType != null || minPrice < 0 || maxPrice < 0;
                 if (hasFilter) {
-                    salesHandler.filterSalesByCriteria(ctx, councilName, propertyType, minPrice, maxPrice, areaType);
+                    salesHandler.filterSalesByCriteria(ctx, councilName,
+                            propertyType, minPrice, maxPrice, areaType);
                 } else {
                     salesHandler.getAllSales(ctx);
                 }

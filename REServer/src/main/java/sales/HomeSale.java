@@ -5,23 +5,23 @@ import java.sql.Date;
 // "Simple" class to provide test data in SalesDAO
 
 public class HomeSale {
-    private final String councilName;
-    private final String address;
-    private final String propertyType;
-    private final String propertyName;
-    private final String areaType;
-    private final String zoning;
-    private final String natureOfProperty;
-    private final String primaryPurpose;
-    private final String legalDescription;
-    private final int propertyId;
-    private final int purchasePrice;
-    private final int postCode;
-    private final int strataLotNumber;
-    private final Date downloadDate;
-    private final Date contractDate;
-    private final Date settlementDate;
-    private final double area;
+    public String councilName;
+    public String address;
+    public String propertyType;
+    public String propertyName;
+    public String areaType;
+    public String zoning;
+    public String natureOfProperty;
+    public String primaryPurpose;
+    public String legalDescription;
+    public int propertyId;
+    public int purchasePrice;
+    public int postCode;
+    public int strataLotNumber;
+    public Date downloadDate;
+    public Date contractDate;
+    public Date settlementDate;
+    public double area;
 
     public HomeSale(int propertyId, Date downloadDate, String councilName,
             int purchasePrice, String address, int postCode,

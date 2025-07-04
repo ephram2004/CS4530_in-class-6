@@ -144,12 +144,12 @@ public class SalesDAO {
 
     public int getPriceHistory(int propertyId) throws SQLException {
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
-             PreparedStatement stmt = conn
-                     .prepareStatement(
-                             "SELECT\n" +
-                                     "  MAX(purchase_price) - MIN(purchase_price) AS price_change\n" +
-                                     "FROM property_sales\n" +
-                                     "WHERE property_id = ?")) {
+                PreparedStatement stmt = conn
+                        .prepareStatement(
+                                "SELECT\n" +
+                                        "  MAX(purchase_price) - MIN(purchase_price) AS price_change\n" +
+                                        "FROM property_sales\n" +
+                                        "WHERE property_id = ?")) {
             stmt.setInt(1, propertyId);
             ResultSet rs = stmt.executeQuery();
             if (rs.next() && !rs.wasNull()) {
@@ -159,23 +159,6 @@ public class SalesDAO {
                 return 0;
             }
         }
-    }
-
-   
-
-    public double getAveragePrice(int postCode) throws SQLException {   
-        //List<HomeSale> sales = new ArrayList<HomeSale>();
-        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
-                PreparedStatement stmt = conn
-                        .prepareStatement(
-                                "SELECT AVG(purchase_price) AS average FROM property_sales WHERE post_code = ?")) {
-            stmt.setInt(1, postCode);
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                prices.add(rs.getInt("purchase_price"));
-            }
-        }
-        return prices;
     }
 
     public List<HomeSale> filterSalesByCriteria(String councilName, String propertyType,

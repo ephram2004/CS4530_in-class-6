@@ -11,7 +11,7 @@ import credentials.Credentials;
 
 public class SalesDAO {
 
-    private static final String JDBC_URL = "jdbc:postgresql://localhost:5432/" +
+    private static final String JDBC_URL = "jdbc:postgresql://10.0.100.74:5432/" +
             Credentials.get("POSTGRES_DB");
     private static final String JDBC_USER = Credentials.get("POSTGRES_USER");
     private static final String JDBC_PASSWORD = Credentials.get("POSTGRES_PASSWORD");

@@ -3,3 +3,5 @@
 .env
 *.lst
 *.jar
+*.json
+**/target

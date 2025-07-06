@@ -8,6 +8,11 @@ import io.javalin.openapi.*;
 
 import io.javalin.http.Context;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.javalin.http.Context;
+
 public class SalesController {
 
     private SalesDAO homeSales;
@@ -25,17 +30,29 @@ public class SalesController {
     // implements POST /sales
     public void createSale(Context ctx) {
 
+        ObjectMapper mapper = new ObjectMapper();
+
+        /*try {
+            JsonNode jsonSalesArray = mapper.readTree(ctx.body());
+            List<DynamicHomeSale> salesList = new ArrayList<>();
+            for (JsonNode sale : jsonSalesArray) {
+                DynamicHomeSale homeSale = new DynamicHomeSale(sale);
+                salesList.add(homeSale);
+            }
+        } catch (Exception e) {
+            ctx.status(400);
+            return;
+        }
+         */
         // Extract Home Sale from request body
         // TO DO override Validator exception method to report better error message
-        HomeSale sale = ctx.bodyValidator(HomeSale.class)
-                .get();
-
-        // store new sale in data set
         try {
+            JsonNode jsonSale = mapper.readTree(ctx.body()); // store new sale in data set
+            DynamicHomeSale sale = new DynamicHomeSale(jsonSale);
             homeSales.newSale(sale);
             ctx.result("Sale Created");
             ctx.status(201);
-        } catch (SQLException e) {
+        } catch (Exception e) {
             ctx.result("Failed to add sale: " + e.getMessage());
             ctx.status(400);
         }
@@ -126,6 +143,7 @@ public class SalesController {
         }
     }
 
+
     @OpenApi(summary = "Filter sales by criteria", operationId = "filterSales", path = "/sales", // If you're keeping
                                                                                                  // filters as query
                                                                                                  // params on /sales
@@ -158,6 +176,7 @@ public class SalesController {
         }
     }
 
+
     @OpenApi(summary = "Get average sale price by postcode", operationId = "getAveragePrice", path = "/sales/average/{postcode}", methods = HttpMethod.GET, tags = {
             "Sales" }, pathParams = {
                     @OpenApiParam(name = "postcode")
@@ -174,5 +193,4 @@ public class SalesController {
             ctx.status(400);
         }
     }
-
 }

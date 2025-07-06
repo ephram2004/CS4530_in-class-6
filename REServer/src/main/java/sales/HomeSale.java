@@ -3,8 +3,8 @@ package sales;
 import java.sql.Date;
 
 // "Simple" class to provide test data in SalesDAO
-
 public class HomeSale {
+
     public String councilName;
     public String address;
     public String propertyType;

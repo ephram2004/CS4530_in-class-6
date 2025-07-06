@@ -4,6 +4,9 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.javalin.http.Context;
 
 public class SalesController {
@@ -17,17 +20,29 @@ public class SalesController {
     // implements POST /sales
     public void createSale(Context ctx) {
 
+        ObjectMapper mapper = new ObjectMapper();
+
+        /*try {
+            JsonNode jsonSalesArray = mapper.readTree(ctx.body());
+            List<DynamicHomeSale> salesList = new ArrayList<>();
+            for (JsonNode sale : jsonSalesArray) {
+                DynamicHomeSale homeSale = new DynamicHomeSale(sale);
+                salesList.add(homeSale);
+            }
+        } catch (Exception e) {
+            ctx.status(400);
+            return;
+        }
+         */
         // Extract Home Sale from request body
         // TO DO override Validator exception method to report better error message
-        HomeSale sale = ctx.bodyValidator(HomeSale.class)
-                .get();
-
-        // store new sale in data set
         try {
+            JsonNode jsonSale = mapper.readTree(ctx.body()); // store new sale in data set
+            DynamicHomeSale sale = new DynamicHomeSale(jsonSale);
             homeSales.newSale(sale);
             ctx.result("Sale Created");
             ctx.status(201);
-        } catch (SQLException e) {
+        } catch (Exception e) {
             ctx.result("Failed to add sale: " + e.getMessage());
             ctx.status(400);
         }
@@ -85,8 +100,8 @@ public class SalesController {
     public void findPriceHistoryByPropertyId(Context ctx, int propertyId) {
         try {
             int priceDiff = homeSales.getPriceHistory(propertyId);
-                ctx.result(String.valueOf(priceDiff));
-                ctx.status(200);
+            ctx.result(String.valueOf(priceDiff));
+            ctx.status(200);
         } catch (SQLException e) {
             ctx.result("Error retrieving price difference: " + e.getMessage());
         }

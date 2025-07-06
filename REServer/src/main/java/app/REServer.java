@@ -1,13 +1,19 @@
 package app;
 
+import helpers.HelperSQL;
 import io.javalin.Javalin;
 import io.javalin.config.JavalinConfig;
-import sales.SalesDAO;
+import sales.DynamicHomeSale;
 import sales.SalesController;
+import sales.SalesDAO;
 
 public class REServer {
 
     public static void main(String[] args) {
+        // exporting schema to JSON file
+        HelperSQL.exportSchemaToFile(DynamicHomeSale.class);
+
+        System.out.println(HelperSQL.insertBySQLBuilder(DynamicHomeSale.class, "property_sales"));
 
         // in memory test data store
         var sales = new SalesDAO();
@@ -52,7 +58,6 @@ public class REServer {
             });
             // create a new sales record
             app.post("/sales", ctx -> {
-
                 salesHandler.createSale(ctx);
             });
             // Get all sales for a specified postcode
@@ -60,7 +65,8 @@ public class REServer {
                 salesHandler.findSaleByPostCode(ctx, Integer.parseInt(ctx.pathParam("postcode")));
             });
             app.get("sales/propertyId/{propertyID}", ctx -> {
-                salesHandler.findPriceHistoryByPropertyId(ctx, Integer.parseInt(ctx.pathParam("propertyID")));
+                salesHandler.findPriceHistoryByPropertyId(ctx,
+                        Integer.parseInt(ctx.pathParam("propertyID")));
             });
             // Get average sale price for a specific postcode
             app.get("/sales/average/{postcode}", ctx -> {

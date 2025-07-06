@@ -81,7 +81,7 @@ public class REServer {
         System.out.println(
                 "✅ Javalin server started at http://localhost:7070");
         System.out.println(
-                "📘 Swagger UI: http://localhost:7070/swagger-ui");
+                "📘 Swagger UI: http://localhost:7070/swagger");
         System.out.println(
                 "📕 ReDoc UI:   http://localhost:7070/redoc");
         System.out.println(

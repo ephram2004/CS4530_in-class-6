@@ -1,8 +1,7 @@
-package sales;
+package sql.sales;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

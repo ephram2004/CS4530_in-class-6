@@ -11,6 +11,8 @@ import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import sql.sales.DynamicHomeSale;
 import sql.sales.SalesController;
 import sql.sales.SalesDAO;
+import sql.metric.MetricsDAO;
+import sql.metric.MetricsController;
 
 public class REServer {
 
@@ -20,9 +22,12 @@ public class REServer {
 
         // in memory test data store
         var sales = new SalesDAO();
+        var metrics = new MetricsDAO();
 
         // API implementation
         SalesController salesHandler = new SalesController(sales);
+
+        MetricsController metricsHandler = new MetricsController(metrics);
 
         Javalin.create(config -> {
             // OpenAPI doc plugins
@@ -66,17 +71,38 @@ public class REServer {
 
                     post(salesHandler::createSale);
 
-                    path("postcode/{postcode}", () -> get(
-                            ctx -> salesHandler.findSaleByPostCode(ctx, Integer.parseInt(ctx.pathParam("postcode")))));
+                    path("postcode/{postcode}", () -> { 
+                        get(ctx -> {
+                        // increment access count
+                        metricsHandler.incrementNumAccessed("postcode", ctx.pathParam("postcode"));
+                        salesHandler.findSaleByPostCode(ctx, Integer.parseInt(ctx.pathParam("postcode")));
+                        });
+                    });
 
-                    path("propertyId/{propertyID}", () -> get(ctx -> salesHandler.findPriceHistoryByPropertyId(ctx,
-                            Integer.parseInt(ctx.pathParam("propertyID")))));
+                    path("propertyId/{propertyID}", ()
+                            -> get(ctx -> salesHandler.findPriceHistoryByPropertyId(ctx, Integer.parseInt(ctx.pathParam("propertyID"))))
+                    );
+                    
+                    path("average/{postcode}", ()
+                            -> get(ctx -> salesHandler.averagePrice(ctx, Integer.parseInt(ctx.pathParam("postcode"))))
+                    );
 
-                    path("average/{postcode}", () -> get(
-                            ctx -> salesHandler.averagePrice(ctx, Integer.parseInt(ctx.pathParam("postcode")))));
+                    path("{saleID}", () -> { 
+                        get(ctx -> {
+                        // increment access count
+                        metricsHandler.incrementNumAccessed("propertyid", ctx.pathParam("saleid"));
+                        salesHandler.getSaleByID(ctx, Integer.parseInt(ctx.pathParam("saleid")));
+                        });
+                    });
 
-                    path("{saleID}",
-                            () -> get(ctx -> salesHandler.getSaleByID(ctx, Integer.parseInt(ctx.pathParam("saleID")))));
+                    path("{metric_name}/{metric_id}/{attribute}", () -> {
+                        get(ctx -> metricsHandler.getMetricyById(
+                            ctx,
+                            ctx.pathParam("metric_name"),  
+                            ctx.pathParam("metric_id"),   
+                            ctx.pathParam("attribute")     
+                        ));
+                    });
                 });
             });
         }).start(7070);

@@ -1,12 +1,13 @@
-package sales;
+package sql.sales;
 
 import java.sql.Date;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import io.micrometer.common.lang.Nullable;
+import sql.ASQLObj;
 
-public class DynamicHomeSale extends ASale {
+public class DynamicHomeSale extends ASQLObj {
 
     public int propertyId;
     @Nullable
@@ -41,17 +42,5 @@ public class DynamicHomeSale extends ASale {
 
     public DynamicHomeSale(JsonNode json) {
         super(json);
-    }
-
-    public Object get(String key) {
-        return attributes.get(key);
-    }
-
-    public Integer getInt(String key) {
-        return (Integer) attributes.get(key);
-    }
-
-    public String getString(String key) {
-        return (String) attributes.get(key);
     }
 }

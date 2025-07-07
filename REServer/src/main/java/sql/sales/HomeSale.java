@@ -1,4 +1,4 @@
-package sales;
+package sql.sales;
 
 import java.sql.Date;
 

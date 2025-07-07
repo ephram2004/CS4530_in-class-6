@@ -38,7 +38,7 @@ public class REServer {
             config.registerPlugin(new SwaggerPlugin());
             config.registerPlugin(new ReDocPlugin());
 
-            // Route builder 
+            // Route builder
             config.router.apiBuilder(() -> {
                 // Health check
                 get("/", ctx -> ctx.result("Real Estate server is running"));
@@ -48,13 +48,17 @@ public class REServer {
                         String councilName = ctx.queryParam("councilname");
                         String propertyType = ctx.queryParam("propertytype");
                         String areaType = ctx.queryParam("areatype");
-                        int minPrice = ctx.queryParam("minprice") != null ? Integer.parseInt(ctx.queryParam("minprice")) : -1;
-                        int maxPrice = ctx.queryParam("maxprice") != null ? Integer.parseInt(ctx.queryParam("maxprice")) : -1;
+                        int minPrice = ctx.queryParam("minprice") != null ? Integer.parseInt(ctx.queryParam("minprice"))
+                                : -1;
+                        int maxPrice = ctx.queryParam("maxprice") != null ? Integer.parseInt(ctx.queryParam("maxprice"))
+                                : -1;
 
-                        boolean hasFilter = councilName != null || propertyType != null || areaType != null || minPrice >= 0 || maxPrice >= 0;
+                        boolean hasFilter = councilName != null || propertyType != null || areaType != null
+                                || minPrice >= 0 || maxPrice >= 0;
 
                         if (hasFilter) {
-                            salesHandler.filterSalesByCriteria(ctx, councilName, propertyType, minPrice, maxPrice, areaType);
+                            salesHandler.filterSalesByCriteria(ctx, councilName, propertyType, minPrice, maxPrice,
+                                    areaType);
                         } else {
                             salesHandler.getAllSales(ctx);
                         }
@@ -62,21 +66,17 @@ public class REServer {
 
                     post(salesHandler::createSale);
 
-                    path("postcode/{postcode}", ()
-                            -> get(ctx -> salesHandler.findSaleByPostCode(ctx, Integer.parseInt(ctx.pathParam("postcode"))))
-                    );
+                    path("postcode/{postcode}", () -> get(
+                            ctx -> salesHandler.findSaleByPostCode(ctx, Integer.parseInt(ctx.pathParam("postcode")))));
 
-                    path("propertyId/{propertyID}", ()
-                            -> get(ctx -> salesHandler.findPriceHistoryByPropertyId(ctx, Integer.parseInt(ctx.pathParam("propertyID"))))
-                    );
+                    path("propertyId/{propertyID}", () -> get(ctx -> salesHandler.findPriceHistoryByPropertyId(ctx,
+                            Integer.parseInt(ctx.pathParam("propertyID")))));
 
-                    path("average/{postcode}", ()
-                            -> get(ctx -> salesHandler.averagePrice(ctx, Integer.parseInt(ctx.pathParam("postcode"))))
-                    );
+                    path("average/{postcode}", () -> get(
+                            ctx -> salesHandler.averagePrice(ctx, Integer.parseInt(ctx.pathParam("postcode")))));
 
-                    path("{saleID}", ()
-                            -> get(ctx -> salesHandler.getSaleByID(ctx, Integer.parseInt(ctx.pathParam("saleID"))))
-                    );
+                    path("{saleID}",
+                            () -> get(ctx -> salesHandler.getSaleByID(ctx, Integer.parseInt(ctx.pathParam("saleID")))));
                 });
             });
         }).start(7070);

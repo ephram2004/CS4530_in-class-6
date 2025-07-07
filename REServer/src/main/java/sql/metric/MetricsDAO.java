@@ -1,7 +1,6 @@
 package sql.metric;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -14,24 +13,19 @@ import java.util.Optional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import credentials.Credentials;
+import sql.ADAO;
 
-public class MetricsDAO {
-    private static final String JDBC_URL = "jdbc:postgresql://"
-            + Credentials.get("POSTGRES_IP")
-            + ":5432/"
-            + Credentials.get(
-                    "POSTGRES_DB");
-    private static final String JDBC_USER = Credentials.get("POSTGRES_USER");
-    private static final String JDBC_PASSWORD = Credentials.get("POSTGRES_PASSWORD");
+public class MetricsDAO extends ADAO {
 
     public void addOrIncrementNumAccessed(Metric metric) throws SQLException {
-        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
-                PreparedStatement stmt = conn.prepareStatement(
-                        "INSERT INTO public.metrics (metric_name, metric_id, num_accessed)\n" + //
-                                "VALUES (?, ?, 1)\n" + //
-                                "ON CONFLICT (metric_name, metric_id)\n" + //
-                                "DO UPDATE SET num_accessed = metrics.num_accessed + 1;")) {
+        try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(
+                "INSERT INTO public.metrics (metric_name, metric_id, num_accessed)\n"
+                + //
+                "VALUES (?, ?, 1)\n"
+                + //
+                "ON CONFLICT (metric_name, metric_id)\n"
+                + //
+                "DO UPDATE SET num_accessed = metrics.num_accessed + 1;")) {
             stmt.setString(1, metric.getMetricName());
             stmt.setString(2, metric.getMetricID());
             stmt.executeUpdate();
@@ -42,8 +36,7 @@ public class MetricsDAO {
         String sql = "SELECT * FROM metrics WHERE metric_id = ? AND metric_name = ?";
         Metric metric = null;
         try (
-                Connection conn = getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
+                Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, metricID);
             stmt.setString(2, metricName);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -72,9 +65,5 @@ public class MetricsDAO {
 
         ObjectMapper mapper = new ObjectMapper();
         return new Metric(mapper.valueToTree(rows));
-    }
-
-    private Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
     }
 }

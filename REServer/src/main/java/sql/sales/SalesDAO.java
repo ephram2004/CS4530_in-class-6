@@ -3,7 +3,6 @@ package sql.sales;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -16,20 +15,12 @@ import java.util.Optional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import credentials.Credentials;
+import sql.ADAO;
 
-public class SalesDAO {
-
-    private static final String JDBC_URL = "jdbc:postgresql://"
-            + Credentials.get("POSTGRES_IP")
-            + ":5432/"
-            + Credentials.get(
-                    "POSTGRES_DB");
-    private static final String JDBC_USER = Credentials.get("POSTGRES_USER");
-    private static final String JDBC_PASSWORD = Credentials.get("POSTGRES_PASSWORD");
+public class SalesDAO extends ADAO {
 
     public boolean newSale(DynamicHomeSale homeSale) throws SQLException {
-        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD)) {
+        try (Connection conn = getConnection()) {
             System.out.println("Inserting new Sale: " + homeSale);
             homeSale.postgressInsert(conn, "property_sales");
             System.out.println("Inserted new Sale.");
@@ -38,10 +29,6 @@ public class SalesDAO {
             // returns Optional wrapping a HomeSale if id is found, empty Optional otherwise
         }
         return true;
-    }
-
-    private Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
     }
 
     private static double round(double value, int places) {
@@ -134,8 +121,7 @@ public class SalesDAO {
     }
 
     public int getPriceHistory(int propertyId) throws SQLException {
-        try (Connection conn = DriverManager.
-                getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD); PreparedStatement stmt = conn
+        try (Connection conn = getConnection(); PreparedStatement stmt = conn
                 .prepareStatement("""
                                   SELECT
                                   MAX(purchase_price) - MIN(purchase_price) AS price_change
@@ -153,7 +139,7 @@ public class SalesDAO {
     }
 
     public double getAveragePrice(int postCode) throws SQLException {
-        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD); PreparedStatement stmt = conn
+        try (Connection conn = getConnection(); PreparedStatement stmt = conn
                 .prepareStatement(
                         "SELECT AVG(purchase_price) AS average FROM property_sales WHERE post_code = ?")) {
             stmt.setInt(1, postCode);
@@ -195,8 +181,7 @@ public class SalesDAO {
             params.add(areaType);
         }
 
-        try (Connection conn = DriverManager
-                .getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD); PreparedStatement stmt = conn
+        try (Connection conn = getConnection(); PreparedStatement stmt = conn
                 .prepareStatement(query.toString())) {
             for (int i = 0; i < params.size(); i++) {
                 stmt.setObject(i + 1, params.get(i));

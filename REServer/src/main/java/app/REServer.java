@@ -8,9 +8,9 @@ import static io.javalin.apibuilder.ApiBuilder.post;
 import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.redoc.ReDocPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
-import sales.DynamicHomeSale;
-import sales.SalesController;
-import sales.SalesDAO;
+import sql.sales.DynamicHomeSale;
+import sql.sales.SalesController;
+import sql.sales.SalesDAO;
 
 public class REServer {
 

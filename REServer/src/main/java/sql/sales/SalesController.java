@@ -3,15 +3,21 @@ package sql.sales;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
-import io.javalin.http.Context;
-import io.javalin.openapi.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.javalin.http.Context;
+import io.javalin.openapi.HttpMethod;
+import io.javalin.openapi.OpenApi;
+import io.javalin.openapi.OpenApiContent;
+import io.javalin.openapi.OpenApiParam;
+import io.javalin.openapi.OpenApiRequestBody;
+import io.javalin.openapi.OpenApiResponse;
+
 public class SalesController {
 
-    private SalesDAO homeSales;
+    private final SalesDAO homeSales;
 
     public SalesController(SalesDAO homeSales) {
         this.homeSales = homeSales;
@@ -19,7 +25,7 @@ public class SalesController {
 
     @OpenApi(summary = "Create a new home sale", operationId = "createSale", path = "/sales", methods = HttpMethod.POST, tags = {
         "Sales"}, requestBody = @OpenApiRequestBody(content = {
-        @OpenApiContent(from = HomeSale.class)}), responses = {
+        @OpenApiContent(from = DynamicHomeSale.class)}), responses = {
         @OpenApiResponse(status = "201"),
         @OpenApiResponse(status = "400")
     })
@@ -57,13 +63,13 @@ public class SalesController {
     @OpenApi(summary = "Get all sales", operationId = "getAllSales", path = "/sales", methods = HttpMethod.GET, tags = {
         "Sales"}, responses = {
         @OpenApiResponse(status = "200", content = {
-            @OpenApiContent(from = HomeSale[].class)}),
+            @OpenApiContent(from = DynamicHomeSale[].class)}),
         @OpenApiResponse(status = "404")
     })
     // implements Get /sales
     public void getAllSales(Context ctx) {
         try {
-            List<HomeSale> allSales = homeSales.getAllSales();
+            List<DynamicHomeSale> allSales = homeSales.getAllSales();
             if (allSales.isEmpty()) {
                 ctx.result("No Sales Found");
                 ctx.status(404);
@@ -82,13 +88,13 @@ public class SalesController {
         @OpenApiParam(name = "saleID")
     }, responses = {
         @OpenApiResponse(status = "200", content = {
-            @OpenApiContent(from = HomeSale.class)}),
+            @OpenApiContent(from = DynamicHomeSale.class)}),
         @OpenApiResponse(status = "404")
     })
     // implements GET /sales/{saleID}
     public void getSaleByID(Context ctx, int id) {
         try {
-            Optional<HomeSale> sale = homeSales.getSaleById(id);
+            Optional<DynamicHomeSale> sale = homeSales.getSaleById(id);
             sale.map(ctx::json).orElseGet(() -> {
                 ctx.result("Sale not found");
                 ctx.status(404);
@@ -105,13 +111,13 @@ public class SalesController {
         @OpenApiParam(name = "postcode")
     }, responses = {
         @OpenApiResponse(status = "200", content = {
-            @OpenApiContent(from = HomeSale[].class)}),
+            @OpenApiContent(from = DynamicHomeSale[].class)}),
         @OpenApiResponse(status = "404")
     })
     // Implements GET /sales/postcode/{postcodeID}
     public void findSaleByPostCode(Context ctx, int postCode) {
         try {
-            List<HomeSale> sales = homeSales.getSalesByPostCode(postCode);
+            List<DynamicHomeSale> sales = homeSales.getSalesByPostCode(postCode);
             if (sales.isEmpty()) {
                 ctx.result("No sales for postcode found");
                 ctx.status(404);
@@ -153,13 +159,13 @@ public class SalesController {
                 @OpenApiParam(name = "maxprice", required = false)
             }, responses = {
                 @OpenApiResponse(status = "200", content = {
-            @OpenApiContent(from = HomeSale[].class)}),
+            @OpenApiContent(from = DynamicHomeSale[].class)}),
                 @OpenApiResponse(status = "404")
             })
     public void filterSalesByCriteria(Context ctx, String councilName, String propertyType, int minPrice, int maxPrice,
             String areaType) {
         try {
-            List<HomeSale> sales = homeSales.filterSalesByCriteria(councilName, propertyType, minPrice, maxPrice,
+            List<DynamicHomeSale> sales = homeSales.filterSalesByCriteria(councilName, propertyType, minPrice, maxPrice,
                     areaType);
 
             if (sales.isEmpty()) {

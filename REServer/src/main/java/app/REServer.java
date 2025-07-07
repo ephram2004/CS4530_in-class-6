@@ -28,7 +28,11 @@ public class REServer {
             // OpenAPI doc plugins
             config.registerPlugin(new OpenApiPlugin(pluginConfig -> {
                 pluginConfig.withDefinitionConfiguration((version, definition) -> {
-                    definition.withOpenApiInfo(info -> info.setTitle("Real Estate API"));
+                    definition.withOpenApiInfo(info -> {
+                        info.setTitle("Real Estate API");
+                        info.setVersion("1.0.0");
+                        info.setDescription("API for querying property sales");
+                    });
                 });
             }));
             config.registerPlugin(new SwaggerPlugin());

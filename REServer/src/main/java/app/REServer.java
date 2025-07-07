@@ -87,10 +87,10 @@ public class REServer {
                             -> get(ctx -> salesHandler.averagePrice(ctx, Integer.parseInt(ctx.pathParam("postcode"))))
                     );
 
-                    path("{saleID}", () -> { 
+                    path("sales/{saleID}", () -> { 
                         get(ctx -> {
                         // increment access count
-                        metricsHandler.incrementNumAccessed("propertyid", ctx.pathParam("saleid"));
+                        metricsHandler.incrementNumAccessed("propertyid", ctx.pathParam("saleID"));
                         salesHandler.getSaleByID(ctx, Integer.parseInt(ctx.pathParam("saleid")));
                         });
                     });

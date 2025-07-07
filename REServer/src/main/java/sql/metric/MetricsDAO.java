@@ -34,7 +34,6 @@ public class MetricsDAO {
                                 "DO UPDATE SET num_accessed = metrics.num_accessed + 1;")) {
             stmt.setString(1, metric.getMetricName());
             stmt.setString(2, metric.getMetricID());
-            stmt.setInt(3, metric.getNumAccessed());
             stmt.executeUpdate();
         }
     }

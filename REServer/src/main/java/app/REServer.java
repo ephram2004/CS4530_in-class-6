@@ -79,7 +79,7 @@ public class REServer {
                         });
                     });
 
-                    path("propertyId/{propertyID}", ()
+                    path("price-history/propertyId/{propertyID}", ()
                             -> get(ctx -> salesHandler.findPriceHistoryByPropertyId(ctx, Integer.parseInt(ctx.pathParam("propertyID"))))
                     );
                     
@@ -87,16 +87,16 @@ public class REServer {
                             -> get(ctx -> salesHandler.averagePrice(ctx, Integer.parseInt(ctx.pathParam("postcode"))))
                     );
 
-                    path("sales/{saleID}", () -> { 
+                    path("{saleID}", () -> { 
                         get(ctx -> {
                         // increment access count
                         metricsHandler.incrementNumAccessed("propertyid", ctx.pathParam("saleID"));
-                        salesHandler.getSaleByID(ctx, Integer.parseInt(ctx.pathParam("saleid")));
+                        salesHandler.getSaleByID(ctx, Integer.parseInt(ctx.pathParam("saleID")));
                         });
                     });
 
                     path("{metric_name}/{metric_id}/{attribute}", () -> {
-                        get(ctx -> metricsHandler.getMetricyById(
+                        get(ctx -> metricsHandler.getMetricByID(
                             ctx,
                             ctx.pathParam("metric_name"),  
                             ctx.pathParam("metric_id"),   

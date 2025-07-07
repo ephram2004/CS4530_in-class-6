@@ -2,9 +2,6 @@ package helpers;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.StringJoiner;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,26 +53,7 @@ public class HelperSQL {
         }
     }
 
-    public static String insertBySQLBuilder(Class<?> cls, String tableName) {
-        Field[] classFields = cls.getDeclaredFields();
-
-        StringJoiner columns = new StringJoiner(", ");
-        StringJoiner placeholders = new StringJoiner(", ");
-
-        for (Field field : classFields) {
-            if (Modifier.isStatic(field.getModifiers())) {
-                continue;
-            }
-
-            columns.add(camelToSnake(field.getName()));
-            placeholders.add("?");
-        }
-
-        return String.format("INSERT INTO %s (%s) VALUES (%s)",
-                tableName, columns.toString(), placeholders.toString());
-    }
-
-    private static String camelToSnake(String camel) {
+    public static String camelToSnake(String camel) {
         return camel.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
     }
 }

@@ -7,6 +7,7 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.StringJoiner;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -69,7 +70,7 @@ public abstract class ASQLObj {
 
     public void postgressInsert(Connection conn, String tableName) throws Exception {
         Field[] fields = this.getClass().getDeclaredFields();
-        String sql = HelperSQL.insertBySQLBuilder(this.getClass(), tableName);
+        String sql = insertBySQLBuilder(this.getClass(), tableName);
 
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             int index = 1;
@@ -99,6 +100,25 @@ public abstract class ASQLObj {
 
             stmt.executeUpdate();
         }
+    }
+
+    public static String insertBySQLBuilder(Class<?> cls, String tableName) {
+        Field[] classFields = cls.getDeclaredFields();
+
+        StringJoiner columns = new StringJoiner(", ");
+        StringJoiner placeholders = new StringJoiner(", ");
+
+        for (Field field : classFields) {
+            if (Modifier.isStatic(field.getModifiers())) {
+                continue;
+            }
+
+            columns.add(HelperSQL.camelToSnake(field.getName()));
+            placeholders.add("?");
+        }
+
+        return String.format("INSERT INTO %s (%s) VALUES (%s)",
+                tableName, columns.toString(), placeholders.toString());
     }
 
     @Override

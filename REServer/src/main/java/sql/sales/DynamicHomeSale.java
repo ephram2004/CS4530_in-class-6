@@ -5,9 +5,9 @@ import java.sql.Date;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import io.micrometer.common.lang.Nullable;
-import sql.ASQLObj;
+import sql.ANoSQLObj;
 
-public class DynamicHomeSale extends ASQLObj {
+public class DynamicHomeSale extends ANoSQLObj {
 
     public int propertyId;
     @Nullable

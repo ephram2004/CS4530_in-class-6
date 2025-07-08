@@ -92,7 +92,7 @@ public abstract class ANoSQLObj {
             field.setAccessible(true);
             Object value = field.get(this);
 
-            if (value == null) {
+            if (value != null) {
                 fieldValsMap.put(field.getName(), value.toString());
             }
         }

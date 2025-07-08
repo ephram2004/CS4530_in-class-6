@@ -3,6 +3,7 @@ package sql.sales;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -14,184 +15,130 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import redis.clients.jedis.Jedis;
+import java.util.Set;
 
-import sql.ADAO;
+import credentials.Credentials;
 
-public class SalesDAO extends ADAO {
+public class SalesDAO {
 
-    public boolean newSale(DynamicHomeSale homeSale) throws SQLException {
-        try (Connection conn = getConnection()) {
-            System.out.println("Inserting new Sale: " + homeSale);
-            homeSale.postgressInsert(conn, "property_sales");
-            System.out.println("Inserted new Sale.");
+    private static final String KEY_PREFIX = "property_sales";
+    private static final ObjectMapper mapper = new ObjectMapper();
+
+    public boolean newSale(DynamicHomeSale homeSale) {
+        try (Jedis jedis = new Jedis("localhost", 6379)) {
+            homeSale.saveToRedis(KEY_PREFIX, "propertyId");
+            String postcode = String.valueOf(homeSale.getInt("postCode"));
+            if (postcode != null && !postcode.equals("null")) {
+                jedis.sadd("postcode:" + postcode, String.valueOf(homeSale.getInt("propertyId")));
+            }
+            System.out.println("✅ Inserted new Sale to Redis.");
+            return true;
         } catch (Exception e) {
-            System.err.println("Could not insert new sale! " + e);
-            // returns Optional wrapping a HomeSale if id is found, empty Optional otherwise
+            System.err.println("❌ Could not insert new sale: " + e.getMessage());
+            return false;
         }
-        return true;
     }
 
-    private static double round(double value, int places) {
-        if (places < 0) {
-            throw new IllegalArgumentException();
+    public Optional<DynamicHomeSale> getSaleById(int propertyId) {
+        try (Jedis jedis = new Jedis("localhost", 6379)) {
+            String redisKey = KEY_PREFIX + ":" + propertyId;
+            Map<String, String> data = jedis.hgetAll(redisKey);
+            if (data == null || data.isEmpty())
+                return Optional.empty();
+            JsonNode node = mapper.valueToTree(data);
+            return Optional.of(new DynamicHomeSale(node));
+        } catch (Exception e) {
+            System.err.println("❌ Redis read error: " + e.getMessage());
+            return Optional.empty();
         }
-
-        BigDecimal bd = BigDecimal.valueOf(value);
-        bd = bd.setScale(places, RoundingMode.HALF_UP);
-        return bd.doubleValue();
-    }
-
-    private DynamicHomeSale mapResultSetToDynamicHomeSale(ResultSet rs) throws SQLException {
-        List<Map<String, Object>> rows = new ArrayList<>();
-        ResultSetMetaData meta = rs.getMetaData();
-        int columnCount = meta.getColumnCount();
-
-        while (rs.next()) {
-            Map<String, Object> row = new HashMap<>();
-            for (int i = 1; i <= columnCount; i++) {
-                String columnName = meta.getColumnLabel(i); // or getColumnName(i)
-                Object value = rs.getObject(i);
-                row.put(columnName, value);
-            }
-            rows.add(row);
-        }
-
-        ObjectMapper mapper = new ObjectMapper();
-        return new DynamicHomeSale(mapper.valueToTree(rows));
-    }
-
-    public Optional<DynamicHomeSale> getSaleById(int saleID) throws SQLException {
-        String sql = "SELECT * FROM property_sales WHERE property_id = ?";
-        DynamicHomeSale sale = null;
-        try (
-                Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, saleID);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    sale = mapResultSetToDynamicHomeSale(rs);
-                }
-            }
-        }
-        return Optional.ofNullable(sale);
     }
 
     // returns Optional wrapping a HomeSale if id is found, empty Optional otherwise
-    public List<DynamicHomeSale> getSalesByPostCode(int postCode) throws SQLException {
+    public List<DynamicHomeSale> getSalesByPostCode(int postCode) {
         List<DynamicHomeSale> sales = new ArrayList<>();
-        String sql = "SELECT * FROM property_sales WHERE post_code = ?";
-        try (
-                Connection conn = getConnection(); PreparedStatement stmt = conn.
-                        prepareStatement(sql)) {
-            stmt.setInt(1, postCode);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    DynamicHomeSale sale = mapResultSetToDynamicHomeSale(rs);
-                    sales.add(sale);
+        try (Jedis jedis = new Jedis("localhost", 6379)) {
+            Set<String> ids = jedis.smembers("postcode:" + postCode);
+            for (String id : ids) {
+                Map<String, String> data = jedis.hgetAll(KEY_PREFIX + ":" + id);
+                if (!data.isEmpty()) {
+                    JsonNode node = mapper.valueToTree(data);
+                    sales.add(new DynamicHomeSale(node));
                 }
             }
+        } catch (Exception e) {
+            System.err.println("❌ Redis postcode lookup failed: " + e.getMessage());
         }
         return sales;
     }
 
     // returns the individual prices for all sales. Potentially large
-    public List<Integer> getAllSalePrices() throws SQLException {
+    public List<Integer> getAllSalePrices() {
         List<Integer> prices = new ArrayList<>();
-        String sql = "SELECT purchase_price FROM property_sales";
-        try (
-                Connection conn = getConnection(); PreparedStatement stmt = conn.
-                        prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                prices.add(rs.getInt("purchase_price"));
-            }
+        for (DynamicHomeSale sale : getAllSales()) {
+            Integer price = sale.getInt("purchasePrice");
+            if (price != null)
+                prices.add(price);
         }
         return prices;
     }
 
-    public List<DynamicHomeSale> getAllSales() throws SQLException {
+    public List<DynamicHomeSale> getAllSales() {
         List<DynamicHomeSale> sales = new ArrayList<>();
-        String sql = "SELECT * FROM property_sales";
-        try (
-                Connection conn = getConnection(); PreparedStatement stmt = conn.
-                        prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                sales.add(mapResultSetToDynamicHomeSale(rs));
+        try (Jedis jedis = new Jedis("localhost", 6379)) {
+            Set<String> keys = jedis.keys(KEY_PREFIX + ":*");
+            for (String key : keys) {
+                Map<String, String> data = jedis.hgetAll(key);
+                if (!data.isEmpty()) {
+                    JsonNode node = mapper.valueToTree(data);
+                    sales.add(new DynamicHomeSale(node));
+                }
             }
+        } catch (Exception e) {
+            System.err.println("❌ Redis keys failed: " + e.getMessage());
         }
         return sales;
     }
 
-    public int getPriceHistory(int propertyId) throws SQLException {
-        try (Connection conn = getConnection(); PreparedStatement stmt = conn
-                .prepareStatement("""
-                                  SELECT
-                                  MAX(purchase_price) - MIN(purchase_price) AS price_change
-                                  FROM property_sales
-                                  WHERE property_id = ?""")) {
-            stmt.setInt(1, propertyId);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next() && !rs.wasNull()) {
-                int priceChange = rs.getInt("price_change");
-                return priceChange;
-            } else {
-                return 0;
-            }
+    public double getAveragePrice(int postCode) {
+        List<DynamicHomeSale> sales = getSalesByPostCode(postCode);
+        if (sales.isEmpty())
+            return 0;
+        double total = 0;
+        for (DynamicHomeSale s : sales) {
+            Integer p = s.getInt("purchasePrice");
+            if (p != null)
+                total += p;
         }
-    }
-
-    public double getAveragePrice(int postCode) throws SQLException {
-        try (Connection conn = getConnection(); PreparedStatement stmt = conn
-                .prepareStatement(
-                        "SELECT AVG(purchase_price) AS average FROM property_sales WHERE post_code = ?")) {
-            stmt.setInt(1, postCode);
-            ResultSet rs = stmt.executeQuery();
-            System.out.println(rs);
-            if (rs.next() && !rs.wasNull()) {
-                double avg = rs.getDouble("average");
-                return round(avg, 2);
-            } else {
-                return 0;
-            }
-        }
+        return Math.round(total / sales.size() * 100.0) / 100.0;
     }
 
     public List<DynamicHomeSale> filterSalesByCriteria(String councilName, String propertyType,
-            int minPrice, int maxPrice, String areaType) throws SQLException {
-        List<DynamicHomeSale> sales = new ArrayList<>();
-        StringBuilder query = new StringBuilder("SELECT * FROM property_sales WHERE 1=1");
-        List<Object> params = new ArrayList<>();
+            int minPrice, int maxPrice, String areaType) {
+        List<DynamicHomeSale> filtered = new ArrayList<>();
+        for (DynamicHomeSale sale : getAllSales()) {
+            boolean match = true;
+            if (councilName != null && !councilName.equals(sale.getString("councilName")))
+                match = false;
+            if (propertyType != null && !propertyType.equals(sale.getString("propertyType")))
+                match = false;
+            Integer price = sale.getInt("purchasePrice");
+            if (minPrice >= 0 && (price == null || price < minPrice))
+                match = false;
+            if (maxPrice >= 0 && (price == null || price > maxPrice))
+                match = false;
+            if (areaType != null && !areaType.equals(sale.getString("areaType")))
+                match = false;
+            if (match)
+                filtered.add(sale);
+        }
+        return filtered;
+    }
 
-        if (councilName != null && !councilName.isEmpty()) {
-            query.append(" AND council_name = ?");
-            params.add(councilName);
-        }
-        if (propertyType != null && !propertyType.isEmpty()) {
-            query.append(" AND property_type = ?");
-            params.add(propertyType);
-        }
-        if (minPrice >= 0) {
-            query.append(" AND purchase_price >= ?");
-            params.add(minPrice);
-        }
-        if (maxPrice >= 0) {
-            query.append(" AND purchase_price <= ?");
-            params.add(maxPrice);
-        }
-        if (areaType != null && !areaType.isEmpty()) {
-            query.append(" AND area_type = ?");
-            params.add(areaType);
-        }
-
-        try (Connection conn = getConnection(); PreparedStatement stmt = conn
-                .prepareStatement(query.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                stmt.setObject(i + 1, params.get(i));
-            }
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                sales.add(mapResultSetToDynamicHomeSale(rs));
-            }
-        }
-        return sales;
+    private static double round(double value, int places) {
+        if (places < 0)
+            throw new IllegalArgumentException();
+        return BigDecimal.valueOf(value).setScale(places, RoundingMode.HALF_UP).doubleValue();
     }
 }

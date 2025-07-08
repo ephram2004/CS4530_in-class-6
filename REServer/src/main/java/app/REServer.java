@@ -13,6 +13,8 @@ import sql.sales.SalesController;
 import sql.sales.SalesDAO;
 import sql.metric.MetricsDAO;
 import sql.metric.MetricsController;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class REServer {
 
@@ -47,7 +49,7 @@ public class REServer {
             config.router.apiBuilder(() -> {
                 // Health check
                 get("/", ctx -> ctx.result("Real Estate server is running"));
-                // Sales routes
+                
                 path("sales", () -> {
                     get(ctx -> {
                         String councilName = ctx.queryParam("councilname");

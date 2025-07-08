@@ -12,7 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import helper.Helper;
-import credentials.Credentials;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Pipeline;
 
 // TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
@@ -40,94 +41,87 @@ public class Main {
         // Path of CSV file to read
         final Path csvFilePath = Paths.get(PATH_TO_FILE);
 
-        try (CSVParser parser = CSVParser.parse(csvFilePath, StandardCharsets.UTF_8, CSV_FORMAT)) {
-            System.out.println("File opened");
-            String headers = parser.getHeaderNames().toString();
-            System.out.println("headers: " + headers);
+                try (CSVParser parser = CSVParser.parse(csvFilePath, StandardCharsets.UTF_8, CSV_FORMAT);
+                                Jedis jedis = new Jedis("localhost", 6379)) {
 
-            try (Connection conn = DriverManager
-                    .getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD)) {
+                        System.out.println("Connected to Redis");
+                        System.out.println("File opened");
 
-                conn.setAutoCommit(false); // group many inserts into one commit
+                        List<CSVRecord> skippedRows = new ArrayList<>();
+                        int count = 0;
+                        long saleId = 0;
 
-                String sql = "INSERT INTO property_sales (property_id, download_date, " +
-                        "council_name, purchase_price, address, post_code, property_type, " +
-                        "strata_lot_number, property_name, area, area_type, " +
-                        "contract_date, settlement_date, zoning, nature_of_property, " +
-                        "primary_purpose, legal_description) " +
-                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        int batchSize = 50000;
+                        Pipeline pipeline = jedis.pipelined();
 
-                try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                    List<CSVRecord> skippedRows = new ArrayList<>();
-                    // Iterate over input CSV records
-                    int count = 0;
-                    for (final CSVRecord record : parser) {
-                        Integer propId = Helper.parseIntSafe(record.get("property_id"));
-                        if (propId == null) {
-                            skippedRows.add(record);
-                            continue;
+                        for (final CSVRecord record : parser) {
+                                String redisKey = "sale_id:" + saleId;
+                                Map<String, String> propertyData = new HashMap<>();
+                                putSafe(propertyData, "sale_id", Helper.parseStringSafe(String.valueOf(saleId)));
+                                if (!putSafe(propertyData, "property_id",
+                                                Helper.parseStringSafe(record.get("property_id")))) {
+                                        skippedRows.add(record);
+                                        count++;
+                                        continue;
+                                }
+                                putSafe(propertyData, "download_date",
+                                                Helper.parseStringSafe(record.get("download_date")));
+                                putSafe(propertyData, "council_name",
+                                                Helper.parseStringSafe(record.get("council_name")));
+                                putSafe(propertyData, "purchase_price",
+                                                String.valueOf(Helper.parseIntSafe(record.get("purchase_price"))));
+                                putSafe(propertyData, "address", Helper.parseStringSafe(record.get("address")));
+                                putSafe(propertyData, "post_code",
+                                                String.valueOf(Helper.parseIntSafe(record.get("post_code"))));
+                                putSafe(propertyData, "property_type",
+                                                Helper.parseStringSafe(record.get("property_type")));
+                                putSafe(propertyData, "strata_lot_number",
+                                                String.valueOf(Helper.parseIntSafe(record.get("strata_lot_number"))));
+                                putSafe(propertyData, "property_name",
+                                                Helper.parseStringSafe(record.get("property_name")));
+                                putSafe(propertyData, "area",
+                                                String.valueOf(Helper.parseDoubleSafe(record.get("area"))));
+                                putSafe(propertyData, "area_type", Helper.parseStringSafe(record.get("area_type")));
+                                putSafe(propertyData, "contract_date",
+                                                Helper.parseStringSafe(record.get("contract_date")));
+                                putSafe(propertyData, "settlement_date",
+                                                Helper.parseStringSafe(record.get("settlement_date")));
+                                putSafe(propertyData, "zoning", Helper.parseStringSafe(record.get("zoning")));
+                                putSafe(propertyData, "nature_of_property",
+                                                Helper.parseStringSafe(record.get("nature_of_property")));
+                                putSafe(propertyData, "primary_purpose",
+                                                Helper.parseStringSafe(record.get("primary_purpose")));
+                                putSafe(propertyData, "legal_description",
+                                                Helper.parseStringSafe(record.get("legal_description")));
+
+                                pipeline.hset(redisKey, propertyData);
+
+                                if (count % batchSize == 0) {
+                                        System.out.println("Flushing batch of " + batchSize + " records...");
+                                        pipeline.sync();
+                                }
+
+                                System.out.println("Loaded " + redisKey);
+                                count++;
+                                saleId++;
                         }
 
-                        stmt.setInt(1, propId);
-                        stmt.setDate(2,
-                                Helper.parseDateSafe(record.get("download_date")));
-                        stmt.setString(3,
-                                Helper.parseStringSafe(record.get("council_name")));
-                        stmt.setObject(4,
-                                Helper.parseIntSafe(record.get("purchase_price")));
-                        stmt.setString(5,
-                                Helper.parseStringSafe(record.get("address")));
-                        stmt.setObject(6,
-                                Helper.parseIntSafe(record.get("post_code")));
-                        stmt.setString(7,
-                                Helper.parseStringSafe(record.get("property_type")));
-                        stmt.setObject(8,
-                                Helper.parseIntSafe(record.get("strata_lot_number")));
-                        stmt.setString(9,
-                                Helper.parseStringSafe(record.get("property_name")));
-                        stmt.setObject(10,
-                                Helper.parseDoubleSafe(record.get("area")));
-                        stmt.setString(11,
-                                Helper.parseStringSafe(record.get("area_type")));
-                        stmt.setDate(12,
-                                Helper.parseDateSafe(record.get("contract_date")));
-                        stmt.setDate(13,
-                                Helper.parseDateSafe(record.get("settlement_date")));
-                        stmt.setString(14,
-                                Helper.parseStringSafe(record.get("zoning")));
-                        stmt.setString(15,
-                                Helper.parseStringSafe(record.get("nature_of_property")));
-                        stmt.setString(16,
-                                Helper.parseStringSafe(record.get("primary_purpose")));
-                        stmt.setString(17,
-                                Helper.parseStringSafe(record.get("legal_description")));
+                        pipeline.sync();
+                        System.out.println("Imported " + saleId + " rows into Redis.");
+                        System.out.println("Skipped " + skippedRows.size() + " bad rows.");
+                        jedis.set("metrics", "{}");
 
-                        stmt.addBatch();
-
-                        System.out.println("Added new row. PropertyID = " + propId);
-
-                        // execute batch every 1000 rows
-                        if (++count % 1000 == 0) {
-                            stmt.executeBatch();
-                        }
-                    }
-
-                    stmt.executeBatch(); // execute remaining
-                    conn.commit(); // one commit for all rows
-                    System.out.println("Total records: " + count);
-                    System.out.println("Skipped " + skippedRows.size() + " bad rows.");
-                } catch (SQLException e) {
-                    System.err.println("Error during insert: " + e.getMessage());
-                    try {
-                        conn.rollback();
-                        System.err.println("Transaction rolled back.");
-                    } catch (SQLException anotherone) {
-                        System.err.println("Rollback failed: " + anotherone.getMessage());
-                    }
+                } catch (IOException e) {
+                        System.out.println("Error reading CSV: " + e.getMessage());
                 }
-            }
-        } catch (IOException | SQLException e) {
-            System.out.println("File open failed " + e.getMessage());
         }
-    }
+
+        private static boolean putSafe(Map<String, String> map, String key, Object value) {
+                if (key != null && value != null) {
+                        map.put(key, value.toString());
+                        return true;
+                }
+                return false;
+        }
+
 }

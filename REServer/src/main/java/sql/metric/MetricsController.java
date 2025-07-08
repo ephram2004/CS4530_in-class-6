@@ -1,6 +1,5 @@
 package sql.metric;
 
-import java.sql.SQLException;
 import java.util.Optional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -67,7 +66,7 @@ public class MetricsController {
                 ctx.status(404);
                 return ctx;
             });
-        } catch (SQLException e) {
+        } catch (Exception e) {
             ctx.result("Error retrieving metric: " + e.getMessage());
             ctx.status(400);
         }

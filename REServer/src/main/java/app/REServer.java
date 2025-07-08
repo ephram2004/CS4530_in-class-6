@@ -13,6 +13,8 @@ import sql.sales.SalesController;
 import sql.sales.SalesDAO;
 import sql.metric.MetricsDAO;
 import sql.metric.MetricsController;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class REServer {
 
@@ -47,7 +49,7 @@ public class REServer {
             config.router.apiBuilder(() -> {
                 // Health check
                 get("/", ctx -> ctx.result("Real Estate server is running"));
-                // Sales routes
+
                 path("sales", () -> {
                     get(ctx -> {
                         String councilName = ctx.queryParam("councilname");
@@ -74,7 +76,7 @@ public class REServer {
                     path("postcode/{postcode}", () -> {
                         get(ctx -> {
                             // increment access count
-                            metricsHandler.incrementNumAccessed("postcode", ctx.pathParam("postcode"));
+                            // metricsHandler.incrementNumAccessed("postcode", ctx.pathParam("postcode"));
                             salesHandler.findSaleByPostCode(ctx, Integer.parseInt(ctx.pathParam("postcode")));
                         });
                     });
@@ -88,7 +90,7 @@ public class REServer {
                     path("{saleID}", () -> {
                         get(ctx -> {
                             // increment access count
-                            metricsHandler.incrementNumAccessed("propertyid", ctx.pathParam("saleID"));
+                            // metricsHandler.incrementNumAccessed("propertyid", ctx.pathParam("saleID"));
                             salesHandler.getSaleByID(ctx, Integer.parseInt(ctx.pathParam("saleID")));
                         });
                     });

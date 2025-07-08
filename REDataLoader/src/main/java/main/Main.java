@@ -1,8 +1,5 @@
 package main;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -12,10 +9,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import helper.Helper;
-import redis.clients.jedis.Jedis;
-import credentials.Credentials;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import helper.Helper;
+import helper.RedisJsonCommand;
+import redis.clients.jedis.DefaultJedisClientConfig;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisClientConfig;
+import redis.clients.jedis.Pipeline;
+import redis.clients.jedis.UnifiedJedis;
+import redis.clients.jedis.search.IndexDefinition;
+import redis.clients.jedis.search.IndexOptions;
+import redis.clients.jedis.search.Schema;
+import redis.clients.jedis.util.SafeEncoder;
 
 // TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
@@ -28,6 +39,9 @@ public class Main {
 
         private static final String PATH_TO_FILE = "/Users/alexsun/Downloads/nsw_property_data.csv";
 
+        private static final int BATCH_SIZE = 1000;
+        private static final ObjectMapper objMap = new ObjectMapper();
+
         public static void main(String[] args) {
 
                 // TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the
@@ -38,20 +52,61 @@ public class Main {
                 // Path of CSV file to read
                 final Path csvFilePath = Paths.get(PATH_TO_FILE);
 
-                try (CSVParser parser = CSVParser.parse(csvFilePath, StandardCharsets.UTF_8, CSV_FORMAT);
-                                Jedis jedis = new Jedis("10.0.100.74", 6379)) {
+                HostAndPort hostAndPort = new HostAndPort("localhost", 6379);
 
+                try (UnifiedJedis jedis = new UnifiedJedis(hostAndPort)) {
+                        System.out.println("Connected to Redis");
+
+                        IndexDefinition indexDef = new IndexDefinition(IndexDefinition.Type.JSON)
+                                        .setPrefixes("sale_id:");
+
+                        Schema schema = new Schema()
+                                        .addTextField("$.sale_id", 1.0).as("sale_id")
+                                        .addTagField("$.property_id").as("property_id")
+                                        .addTagField("$.download_date").as("download_date")
+                                        .addTextField("$.council_name", 1.0).as("council_name")
+                                        .addTextField("$.address", 1.0).as("address")
+                                        .addTextField("$.post_code", 1.0).as("post_code")
+                                        .addTagField("$.property_type").as("property_type")
+                                        .addTagField("$.strata_lot_number").as("strata_lot_number")
+                                        .addTextField("$.property_name", 1.0).as("property_name")
+                                        .addTagField("$.area").as("area")
+                                        .addTagField("$.area_type").as("area_type")
+                                        .addTagField("$.contract_date").as("contract_date")
+                                        .addTagField("$.settlement_date").as("settlement_date")
+                                        .addTagField("$.zoning").as("zoning")
+                                        .addTagField("$.nature_of_property").as("nature_of_property")
+                                        .addTagField("$primary_purpose").as("primary_purpose")
+                                        .addTextField("$.legal_description", 1.0).as("legal_description");
+
+                        jedis.ftCreate("sale_idx", IndexOptions.defaultOptions().setDefinition(indexDef), schema);
+                        System.out.println("Index created.");
+                }
+
+                try (CSVParser parser = CSVParser.parse(csvFilePath, StandardCharsets.UTF_8, CSV_FORMAT);
+                                Jedis jedis = new Jedis(hostAndPort,
+                                                DefaultJedisClientConfig.builder().timeoutMillis(10000)
+                                                                .build())) {
                         System.out.println("Connected to Redis");
                         System.out.println("File opened");
 
-                        List<CSVRecord> skippedRows = new ArrayList<>();
+                        Pipeline pipeline = jedis.pipelined();
+
                         int count = 0;
                         long saleId = 0;
+
+                        List<CSVRecord> skippedRows = new ArrayList<>();
+
                         for (final CSVRecord record : parser) {
                                 String redisKey = "sale_id:" + saleId;
                                 Map<String, String> propertyData = new HashMap<>();
                                 putSafe(propertyData, "sale_id", Helper.parseStringSafe(String.valueOf(saleId)));
-                                putSafe(propertyData, "property_id", Helper.parseStringSafe(record.get("property_id")));
+                                if (!putSafe(propertyData, "property_id",
+                                                Helper.parseStringSafe(record.get("property_id")))) {
+                                        skippedRows.add(record);
+                                        count++;
+                                        continue;
+                                }
                                 putSafe(propertyData, "download_date",
                                                 Helper.parseStringSafe(record.get("download_date")));
                                 putSafe(propertyData, "council_name",
@@ -82,30 +137,41 @@ public class Main {
                                 putSafe(propertyData, "legal_description",
                                                 Helper.parseStringSafe(record.get("legal_description")));
 
-                                jedis.hset("sale_id:" + saleId, propertyData);
+                                String jsonString = objMap.writeValueAsString(propertyData);
+
+                                pipeline.sendCommand(
+                                                RedisJsonCommand.JSON_SET,
+                                                SafeEncoder.encode(redisKey),
+                                                SafeEncoder.encode("."),
+                                                SafeEncoder.encode(jsonString));
+
+                                if (count % BATCH_SIZE == 0) {
+                                        System.out.println("Flushing batch of " + BATCH_SIZE + " records...");
+                                        pipeline.sync();
+                                }
 
                                 System.out.println("Loaded " + redisKey);
                                 count++;
                                 saleId++;
-
-                                if (count > 50) {
-                                        break;
-                                }
                         }
 
-                        System.out.println("Imported " + count + " rows into Redis.");
+                        if (count % BATCH_SIZE != 0) {
+                                pipeline.sync();
+                        }
+
+                        System.out.println("Imported " + saleId + " rows into Redis.");
                         System.out.println("Skipped " + skippedRows.size() + " bad rows.");
-                        jedis.set("metrics", "{}");
 
                 } catch (IOException e) {
                         System.out.println("Error reading CSV: " + e.getMessage());
                 }
         }
 
-        private static void putSafe(Map<String, String> map, String key, Object value) {
+        private static boolean putSafe(Map<String, String> map, String key, Object value) {
                 if (key != null && value != null) {
                         map.put(key, value.toString());
+                        return true;
                 }
+                return false;
         }
-
 }

@@ -9,8 +9,12 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import helpers.HelperSQL;
+import helpers.RedisJsonCommand;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.json.commands.RedisJsonCommands;
+import redis.clients.jedis.util.SafeEncoder;
 
 public abstract class ANoSQLObj {
 
@@ -21,9 +25,7 @@ public abstract class ANoSQLObj {
     // json --> java fields
     public ANoSQLObj(JsonNode json) {
         this.attributes = new HashMap<>();
-        json.fieldNames().forEachRemaining(field
-                -> attributes.put(field, json.get(field))
-        );
+        json.fieldNames().forEachRemaining(field -> attributes.put(field, json.get(field)));
 
         populateAttrsFromJSONNode(json);
     }
@@ -38,7 +40,7 @@ public abstract class ANoSQLObj {
             }
 
             String fieldName = field.getName();
-            JsonNode valueNode = attributes.get(fieldName);
+            JsonNode valueNode = attributes.get(HelperSQL.camelToSnake(fieldName));
 
             if (valueNode == null || valueNode.isNull()) {
                 continue;
@@ -72,12 +74,12 @@ public abstract class ANoSQLObj {
 
     // save object to redis
     public void saveToRedis(String redisKeyPrefix, long idFieldName) throws Exception {
-        Field[] fields = this.getClass().getDeclaredFields();
-        Map<String, String> fieldValsMap = new HashMap<>(); // all field vals as string
-
         String redisKey = redisKeyPrefix + ":" + idFieldName;
 
-        // go thru fields & serialize to string map 
+        // Convert this Java object to a snake_case JSON map
+        Map<String, Object> jsonMap = new HashMap<>();
+        Field[] fields = this.getClass().getDeclaredFields();
+
         for (Field field : fields) {
             if (Modifier.isStatic(field.getModifiers())) {
                 continue;
@@ -85,21 +87,30 @@ public abstract class ANoSQLObj {
 
             field.setAccessible(true);
             Object value = field.get(this);
-
             if (value != null) {
-                fieldValsMap.put(field.getName(), value.toString());
+                jsonMap.put(HelperSQL.camelToSnake(field.getName()), value);
             }
         }
 
-        // store to redis with hset
+        // Convert to JSON string
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonString = mapper.writeValueAsString(jsonMap);
+
+        System.out.println("Saving JSON to Redis: " + redisKey + " with JSON: " + jsonString);
+
+        // Send JSON.SET command using low-level pipeline (same as loader)
         try (Jedis jedis = jedisPool.getResource()) {
-            jedis.hset(redisKey, fieldValsMap);
+            jedis.sendCommand(
+                    RedisJsonCommand.JSON_SET,
+                    SafeEncoder.encode(redisKey),
+                    SafeEncoder.encode("."),
+                    SafeEncoder.encode(jsonString));
         } catch (Exception e) {
-            System.out.println("NOT WORKING " + e);
+            System.err.println("Failed to save as JSON: " + e.getMessage());
         }
     }
 
-    // accessors for attributes map 
+    // accessors for attributes map
     @Override
     public String toString() {
         return attributes.toString();

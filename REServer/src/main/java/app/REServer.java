@@ -81,18 +81,16 @@ public class REServer {
                         });
                     });
 
-                    path("price-history/propertyId/{propertyID}", ()
-                            -> get(ctx -> salesHandler.findPriceHistoryByPropertyId(ctx, Integer.parseInt(ctx.pathParam("propertyID"))))
-                    );
+                    path("price-history/propertyId/{propertyID}", () -> get(ctx -> salesHandler
+                            .findPriceHistoryByPropertyId(ctx, Integer.parseInt(ctx.pathParam("propertyID")))));
 
-                    path("average/{postcode}", ()
-                            -> get(ctx -> salesHandler.averagePrice(ctx, Integer.parseInt(ctx.pathParam("postcode"))))
-                    );
+                    path("average/{postcode}", () -> get(
+                            ctx -> salesHandler.averagePrice(ctx, Integer.parseInt(ctx.pathParam("postcode")))));
 
                     path("{saleID}", () -> {
                         get(ctx -> {
                             // increment access count
-                            //metricsHandler.incrementNumAccessed("propertyid", ctx.pathParam("saleID"));
+                            // metricsHandler.incrementNumAccessed("propertyid", ctx.pathParam("saleID"));
                             salesHandler.getSaleByID(ctx, Integer.parseInt(ctx.pathParam("saleID")));
                         });
                     });
@@ -102,8 +100,7 @@ public class REServer {
                                 ctx,
                                 ctx.pathParam("metric_name"),
                                 ctx.pathParam("metric_id"),
-                                ctx.pathParam("attribute")
-                        ));
+                                ctx.pathParam("attribute")));
                     });
                 });
             });

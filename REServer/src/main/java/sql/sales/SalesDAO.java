@@ -164,30 +164,51 @@ public class SalesDAO {
 
     public List<DynamicHomeSale> filterSalesByCriteria(String councilName, String propertyType,
             int minPrice, int maxPrice, String areaType) {
-        List<DynamicHomeSale> filtered = new ArrayList<>();
-        for (DynamicHomeSale sale : this.getAllSales()) {
-            boolean match = true;
-            if (councilName != null && !councilName.equals(sale.getString("councilName"))) {
-                match = false;
+        List<DynamicHomeSale> sales = new ArrayList<>();
+        try (UnifiedJedis jedis = new UnifiedJedis(new HostAndPort("localhost", 6379))) {
+            StringBuilder queryBuilder = new StringBuilder();
+
+            if (councilName != null) {
+                queryBuilder.append(String.format("@council_name:%s ", councilName));
             }
-            if (propertyType != null && !propertyType.equals(sale.getString("propertyType"))) {
-                match = false;
+            if (propertyType != null) {
+                queryBuilder.append(String.format("@property_type:%s ", propertyType));
             }
-            Integer price = sale.getInt("purchasePrice");
-            if (minPrice >= 0 && (price == null || price < minPrice)) {
-                match = false;
+            if (areaType != null) {
+                queryBuilder.append(String.format("@area_type:%s ", areaType));
             }
-            if (maxPrice >= 0 && (price == null || price > maxPrice)) {
-                match = false;
+            if (minPrice >= 0 || maxPrice >= 0) {
+                int min = Math.max(minPrice, 0);
+                int max = (maxPrice >= 0) ? maxPrice : Integer.MAX_VALUE;
+                queryBuilder.append(String.format("@purchase_price:[%d %d] ", min, max));
             }
-            if (areaType != null && !areaType.equals(sale.getString("areaType"))) {
-                match = false;
+
+            String queryStr = queryBuilder.toString().trim();
+            if (queryStr.isEmpty())
+                queryStr = "*";
+
+            Query query = new Query(queryStr).limit(0, 1000);
+
+            SearchResult result = jedis.ftSearch("sale_idx", query);
+
+            for (Document doc : result.getDocuments()) {
+                String redisKey = doc.getId();
+                byte[] raw = (byte[]) jedis.sendCommand(
+                        RedisJsonCommand.JSON_GET,
+                        SafeEncoder.encode(redisKey),
+                        SafeEncoder.encode("."));
+                if (raw != null) {
+                    String json = new String(raw, java.nio.charset.StandardCharsets.UTF_8);
+                    JsonNode node = mapper.readTree(json);
+                    sales.add(new DynamicHomeSale(node));
+                }
             }
-            if (match) {
-                filtered.add(sale);
-            }
+
+        } catch (Exception e) {
+            System.err.println("❌ RedisSearch filter failed: " + e.getMessage());
         }
-        return filtered;
+
+        return sales;
     }
 
     public int getPriceHistory(int propertyId) {

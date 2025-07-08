@@ -76,7 +76,7 @@ public class REServer {
                     path("postcode/{postcode}", () -> {
                         get(ctx -> {
                             // increment access count
-                            //metricsHandler.incrementNumAccessed("postcode", ctx.pathParam("postcode"));
+                            // metricsHandler.incrementNumAccessed("postcode", ctx.pathParam("postcode"));
                             salesHandler.findSaleByPostCode(ctx, Integer.parseInt(ctx.pathParam("postcode")));
                         });
                     });

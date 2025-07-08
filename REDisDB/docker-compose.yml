@@ -7,13 +7,6 @@ services:
     volumes:
       - redis-data:/data
 
-  initdb:
-    build: ./initdb
-    depends_on:
-      - redis
-    entrypoint: ["sh", "-c", "sleep 2 && python init_data.py"]
-    restart: "no"  # Runs only once
-
   redisinsight:
     image: redislabs/redisinsight:1.14.0
     container_name: redisinsight

@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import helper.Helper;
-import credentials.Credentials;;
+import credentials.Credentials;
 
 // TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.

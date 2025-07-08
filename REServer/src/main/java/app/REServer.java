@@ -49,7 +49,7 @@ public class REServer {
             config.router.apiBuilder(() -> {
                 // Health check
                 get("/", ctx -> ctx.result("Real Estate server is running"));
-                
+
                 path("sales", () -> {
                     get(ctx -> {
                         String councilName = ctx.queryParam("councilname");
@@ -73,36 +73,36 @@ public class REServer {
 
                     post(salesHandler::createSale);
 
-                    path("postcode/{postcode}", () -> { 
+                    path("postcode/{postcode}", () -> {
                         get(ctx -> {
-                        // increment access count
-                        metricsHandler.incrementNumAccessed("postcode", ctx.pathParam("postcode"));
-                        salesHandler.findSaleByPostCode(ctx, Integer.parseInt(ctx.pathParam("postcode")));
+                            // increment access count
+                            //metricsHandler.incrementNumAccessed("postcode", ctx.pathParam("postcode"));
+                            salesHandler.findSaleByPostCode(ctx, Integer.parseInt(ctx.pathParam("postcode")));
                         });
                     });
 
                     path("price-history/propertyId/{propertyID}", ()
                             -> get(ctx -> salesHandler.findPriceHistoryByPropertyId(ctx, Integer.parseInt(ctx.pathParam("propertyID"))))
                     );
-                    
+
                     path("average/{postcode}", ()
                             -> get(ctx -> salesHandler.averagePrice(ctx, Integer.parseInt(ctx.pathParam("postcode"))))
                     );
 
-                    path("{saleID}", () -> { 
+                    path("{saleID}", () -> {
                         get(ctx -> {
-                        // increment access count
-                        metricsHandler.incrementNumAccessed("propertyid", ctx.pathParam("saleID"));
-                        salesHandler.getSaleByID(ctx, Integer.parseInt(ctx.pathParam("saleID")));
+                            // increment access count
+                            //metricsHandler.incrementNumAccessed("propertyid", ctx.pathParam("saleID"));
+                            salesHandler.getSaleByID(ctx, Integer.parseInt(ctx.pathParam("saleID")));
                         });
                     });
 
                     path("{metric_name}/{metric_id}/{attribute}", () -> {
                         get(ctx -> metricsHandler.getMetricByID(
-                            ctx,
-                            ctx.pathParam("metric_name"),  
-                            ctx.pathParam("metric_id"),   
-                            ctx.pathParam("attribute")     
+                                ctx,
+                                ctx.pathParam("metric_name"),
+                                ctx.pathParam("metric_id"),
+                                ctx.pathParam("attribute")
                         ));
                     });
                 });

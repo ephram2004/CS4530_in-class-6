@@ -2,7 +2,7 @@ package sql.metric;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import sql.ASQLObj;
+import sql.ANoSQLObj;
 
 public class Metric extends ANoSQLObj {
 

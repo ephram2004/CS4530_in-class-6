@@ -2,14 +2,9 @@ package sql;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-
-import java.util.HashMap;
-import java.sql.Connection;
 import java.sql.Date;
-import java.sql.PreparedStatement;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.StringJoiner;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,13 +12,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
-import helpers.HelperSQL;
-
 public abstract class ANoSQLObj {
 
     protected static Map<String, Object> attributes;
 
-    protected static JedisPool jedisPool = new JedisPool("localhost", 6379); 
+    protected static JedisPool jedisPool = new JedisPool("localhost", 6379);
 
     // json --> java fields
     public ANoSQLObj(JsonNode json) {
@@ -78,17 +71,18 @@ public abstract class ANoSQLObj {
     }
 
     // save object to redis
-    public void saveToRedis(String redisKeyPrefix, String idFieldName) throws Exception {
-        Class<?> cls = this.getClass(); // get subclass 
-        Field[] fields = cls.getDeclaredFields();
+    public void saveToRedis(String redisKeyPrefix, long idFieldName) throws Exception {
+        Field[] fields = this.getClass().getDeclaredFields();
         Map<String, String> fieldValsMap = new HashMap<>(); // all field vals as string
 
-        String redisKey = redisKeyPrefix + ":" + getFieldValueAsString(idFieldName, cls);
+        String redisKey = redisKeyPrefix + ":" + idFieldName;
 
         // go thru fields & serialize to string map 
         for (Field field : fields) {
-            if (Modifier.isStatic(field.getModifiers())) continue;
-    
+            if (Modifier.isStatic(field.getModifiers())) {
+                continue;
+            }
+
             field.setAccessible(true);
             Object value = field.get(this);
 
@@ -100,15 +94,9 @@ public abstract class ANoSQLObj {
         // store to redis with hset
         try (Jedis jedis = jedisPool.getResource()) {
             jedis.hset(redisKey, fieldValsMap);
+        } catch (Exception e) {
+            System.out.println("NOT WORKING " + e);
         }
-    }
-
-    // get val of field used as the redis id
-    private String getFieldValueAsString(String fieldName, Class<?> cls) throws Exception {
-        Field field = cls.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        Object value = field.get(this);
-        return value != null ? value.toString() : "null";
     }
 
     // accessors for attributes map 

@@ -9,7 +9,7 @@ import sql.ANoSQLObj;
 
 public class DynamicHomeSale extends ANoSQLObj {
 
-    public int saleId;
+    public long saleId;
     public int propertyId;
     @Nullable
     public Date downloadDate;
@@ -43,5 +43,11 @@ public class DynamicHomeSale extends ANoSQLObj {
 
     public DynamicHomeSale(JsonNode json) {
         super(json);
+    }
+
+    @Override
+    public void saveToRedis(String redisKeyPrefix, long idFieldName) throws Exception {
+        this.saleId = idFieldName;
+        super.saveToRedis(redisKeyPrefix, idFieldName);
     }
 }

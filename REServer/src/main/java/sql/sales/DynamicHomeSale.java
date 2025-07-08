@@ -9,6 +9,7 @@ import sql.ANoSQLObj;
 
 public class DynamicHomeSale extends ANoSQLObj {
 
+    public int saleId;
     public int propertyId;
     @Nullable
     public Date downloadDate;

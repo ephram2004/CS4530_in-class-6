@@ -77,7 +77,7 @@ public class SalesController {
                 ctx.json(allSales);
                 ctx.status(200);
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             ctx.result("Error retrieving sale: " + e.getMessage());
             ctx.status(400);
         }
@@ -100,7 +100,7 @@ public class SalesController {
                 ctx.status(404);
                 return ctx;
             });
-        } catch (SQLException e) {
+        } catch (Exception e) {
             ctx.result("Error retrieving sale: " + e.getMessage());
             ctx.status(400);
         }
@@ -125,7 +125,7 @@ public class SalesController {
                 ctx.json(sales);
                 ctx.status(200);
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             ctx.result("Error retrieving sale: " + e.getMessage());
             ctx.status(400);
         }
@@ -143,7 +143,7 @@ public class SalesController {
             int priceDiff = homeSales.getPriceHistory(propertyId);
             ctx.result(String.valueOf(priceDiff));
             ctx.status(200);
-        } catch (SQLException e) {
+        } catch (Exception e) {
             ctx.result("Error retrieving price difference: " + e.getMessage());
         }
     }
@@ -175,7 +175,7 @@ public class SalesController {
                 ctx.json(sales);
                 ctx.status(200);
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             ctx.result("Error retrieving sale: " + e.getMessage());
             ctx.status(400);
         }
@@ -192,7 +192,7 @@ public class SalesController {
         try {
             double averagePrice = homeSales.getAveragePrice(postCode);
             ctx.result(Double.toString(averagePrice));
-        } catch (SQLException e) {
+        } catch (Exception e) {
             ctx.result("Error getting average: " + e.getMessage());
             ctx.status(400);
         }

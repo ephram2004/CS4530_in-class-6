@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import sql.ASQLObj;
 
-public class Metric extends ASQLObj {
+public class Metric extends ANoSQLObj {
 
     private String metricName;
     private String metricID;

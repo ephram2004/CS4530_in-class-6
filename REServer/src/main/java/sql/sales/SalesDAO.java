@@ -27,7 +27,7 @@ public class SalesDAO {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     public boolean newSale(DynamicHomeSale homeSale) {
-        try (Jedis jedis = new Jedis("localhost", 6379)) {
+        try (Jedis jedis = new Jedis("10.0.100.74", 8001)) {
             homeSale.saveToRedis(KEY_PREFIX, "propertyId");
             String postcode = String.valueOf(homeSale.getInt("postCode"));
             if (postcode != null && !postcode.equals("null")) {
@@ -42,7 +42,7 @@ public class SalesDAO {
     }
 
     public Optional<DynamicHomeSale> getSaleById(int propertyId) {
-        try (Jedis jedis = new Jedis("localhost", 6379)) {
+        try (Jedis jedis = new Jedis("10.0.100.74", 8001)) {
             String redisKey = KEY_PREFIX + ":" + propertyId;
             Map<String, String> data = jedis.hgetAll(redisKey);
             if (data == null || data.isEmpty())
@@ -58,7 +58,7 @@ public class SalesDAO {
     // returns Optional wrapping a HomeSale if id is found, empty Optional otherwise
     public List<DynamicHomeSale> getSalesByPostCode(int postCode) {
         List<DynamicHomeSale> sales = new ArrayList<>();
-        try (Jedis jedis = new Jedis("localhost", 6379)) {
+        try (Jedis jedis = new Jedis("10.0.100.74", 8001)) {
             Set<String> ids = jedis.smembers("postcode:" + postCode);
             for (String id : ids) {
                 Map<String, String> data = jedis.hgetAll(KEY_PREFIX + ":" + id);
@@ -86,7 +86,7 @@ public class SalesDAO {
 
     public List<DynamicHomeSale> getAllSales() {
         List<DynamicHomeSale> sales = new ArrayList<>();
-        try (Jedis jedis = new Jedis("localhost", 6379)) {
+        try (Jedis jedis = new Jedis("10.0.100.74", 8001)) {
             Set<String> keys = jedis.keys(KEY_PREFIX + ":*");
             for (String key : keys) {
                 Map<String, String> data = jedis.hgetAll(key);
@@ -135,6 +135,35 @@ public class SalesDAO {
         }
         return filtered;
     }
+
+    public int getPriceHistory(int propertyId) {
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+    
+        try (Jedis jedis = new Jedis("10.0.100.74", 8001)) {
+            Set<String> keys = jedis.keys(KEY_PREFIX + ":*");
+            for (String key : keys) {
+                Map<String, String> data = jedis.hgetAll(key);
+                if (data.isEmpty()) continue;
+    
+                String propIdStr = data.get("propertyId");
+                if (propIdStr != null && Integer.parseInt(propIdStr) == propertyId) {
+                    String priceStr = data.get("purchasePrice");
+                    if (priceStr != null) {
+                        int price = Integer.parseInt(priceStr);
+                        if (price < min) min = price;
+                        if (price > max) max = price;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error in getPriceHistory: " + e.getMessage());
+            return 0;
+        }
+    
+        return (min == Integer.MAX_VALUE || max == Integer.MIN_VALUE) ? 0 : (max - min);
+    }
+    
 
     private static double round(double value, int places) {
         if (places < 0)

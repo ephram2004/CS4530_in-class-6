@@ -25,8 +25,6 @@ public abstract class ASQLObj {
                 -> attributes.put(field, json.get(field))
         );
         populateAttrsFromJSONNode(json);
-
-        System.out.println(attributes);
     }
 
     private void populateAttrsFromJSONNode(JsonNode attributes) {
@@ -76,35 +74,10 @@ public abstract class ASQLObj {
     }
 
     public void postgressInsert(Connection conn, String tableName) throws Exception {
-        Field[] fields = this.getClass().getDeclaredFields();
         String sql = insertBySQLBuilder(this.getClass(), tableName);
 
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            int index = 1;
-
-            for (Field field : fields) {
-                if (!Modifier.isStatic(field.getModifiers())) {
-                    field.setAccessible(true);
-                    Object value = field.get(this);
-
-                    if (value instanceof Integer integer) {
-                        stmt.setInt(index, integer);
-                    } else if (value instanceof Double aDouble) {
-                        stmt.setDouble(index, aDouble);
-                    } else if (value instanceof String string) {
-                        stmt.setString(index, string);
-                    } else if (value instanceof Date date) {
-                        stmt.setDate(index, date);
-                    } else if (value == null) {
-                        stmt.setObject(index, null);
-                    } else {
-                        stmt.setObject(index, value);
-                    }
-
-                    index++;
-                }
-            }
-
+            postgressBatchInsert(stmt);
             stmt.executeUpdate();
         }
     }

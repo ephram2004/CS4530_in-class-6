@@ -1,5 +1,10 @@
 package app;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
 import helpers.HelperSQL;
 import io.javalin.Javalin;
 import static io.javalin.apibuilder.ApiBuilder.get;
@@ -9,10 +14,6 @@ import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.redoc.ReDocPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import sql.sales.DynamicHomeSale;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.URI;
 
 public class REServer {
 
@@ -20,6 +21,7 @@ public class REServer {
         // exporting schema to JSON file
         HelperSQL.exportSchemaToFile(DynamicHomeSale.class);
         String salesUrl = "http://localhost:7071/sales/";
+        String metricsUrl = "http://localhost:7072/metrics/";
 
         // client for sending reqs
         HttpClient client = HttpClient.newHttpClient();
@@ -121,7 +123,7 @@ public class REServer {
                                 HttpResponse<String> res = client.send(salesReq, HttpResponse.BodyHandlers.ofString());
 
                                 HttpRequest metricsReq = HttpRequest.newBuilder()
-                                        .uri(URI.create(salesUrl + "postcode/" + postcode + "/numaccessed"))
+                                        .uri(URI.create(metricsUrl + "postcode/" + postcode + "/numaccessed"))
                                         .POST(HttpRequest.BodyPublishers.noBody())
                                         .build();
                                 client.send(metricsReq, HttpResponse.BodyHandlers.ofString());
@@ -144,7 +146,7 @@ public class REServer {
                             HttpResponse<String> res = client.send(salesReq, HttpResponse.BodyHandlers.ofString());
 
                             HttpRequest metricsReq = HttpRequest.newBuilder()
-                                    .uri(URI.create(salesUrl + "postcode/" + postcode + "/numaccessed"))
+                                    .uri(URI.create(metricsUrl + "postcode/" + postcode + "/numaccessed"))
                                     .POST(HttpRequest.BodyPublishers.noBody())
                                     .build();
                             client.send(metricsReq, HttpResponse.BodyHandlers.ofString()); // optional: ignore
@@ -167,7 +169,7 @@ public class REServer {
                             HttpResponse<String> res = client.send(salesReq, HttpResponse.BodyHandlers.ofString());
 
                             HttpRequest metricsReq = HttpRequest.newBuilder()
-                                    .uri(URI.create(salesUrl + "propertyid/" + propertyID + "/numaccessed"))
+                                    .uri(URI.create(metricsUrl + "propertyid/" + propertyID + "/numaccessed"))
                                     .POST(HttpRequest.BodyPublishers.noBody())
                                     .build();
                             client.send(metricsReq, HttpResponse.BodyHandlers.ofString());
@@ -190,7 +192,7 @@ public class REServer {
                             HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
 
                             HttpRequest metricsReq = HttpRequest.newBuilder()
-                                    .uri(URI.create(salesUrl + "saleid/" + saleID + "/numaccessed"))
+                                    .uri(URI.create(metricsUrl + "saleid/" + saleID + "/numaccessed"))
                                     .POST(HttpRequest.BodyPublishers.noBody())
                                     .build();
                             client.send(metricsReq, HttpResponse.BodyHandlers.ofString());
@@ -207,7 +209,7 @@ public class REServer {
                             String metricName = ctx.pathParam("metric_name");
                             String metricId = ctx.pathParam("metric_id");
                             String attribute = ctx.pathParam("attribute");
-                            String url = salesUrl + metricName + "/" + metricId + "/" + attribute;
+                            String url = metricsUrl + metricName + "/" + metricId + "/" + attribute;
                             try {
                                 HttpRequest req = HttpRequest.newBuilder()
                                         .uri(URI.create(url))

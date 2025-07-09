@@ -4,6 +4,7 @@ import helpers.HelperSQL;
 import io.javalin.Javalin;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
+import static io.javalin.apibuilder.ApiBuilder.post;
 import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.redoc.ReDocPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
@@ -14,56 +15,67 @@ import sql.metric.MetricsDAO;
 public class REMetrics {
 
     public static void main(String[] args) {
-        // exporting schema to JSON file
+        // Export schema
         HelperSQL.exportSchemaToFile(Metric.class);
 
-        // in memory test data store
+        // DAO and Controller setup
         var metricsDAO = new MetricsDAO();
-
-        // API implementation
         MetricsController metricsHandler = new MetricsController(metricsDAO);
 
+        // Start server
         Javalin.create(config -> {
-            // OpenAPI doc plugins
+            // OpenAPI docs
             config.registerPlugin(new OpenApiPlugin(pluginConfig -> {
                 pluginConfig.withDefinitionConfiguration((version, definition) -> {
                     definition.withOpenApiInfo(info -> {
-                        info.setTitle("Real Estate API");
+                        info.setTitle("Real Estate Metrics API");
                         info.setVersion("1.0.0");
-                        info.setDescription("API for querying property sales");
+                        info.setDescription("API for tracking metric accesses");
                     });
                 });
             }));
             config.registerPlugin(new SwaggerPlugin());
             config.registerPlugin(new ReDocPlugin());
 
-            // Route builder
+            // Routes
             config.router.apiBuilder(() -> {
                 // Health check
-                get("/", ctx -> ctx.result("Real Estate server is running"));
-                // Sales routes
-                path("metrics", () -> {
-                    path("{metric_name}/{metric_id}/{attribute}", () -> {
-                        get(ctx -> metricsHandler.getMetricByID(
+                get("/", ctx -> ctx.result("Real Estate Metrics server is running"));
+
+                // Main GET + POST route
+                path("metrics/{metric_name}/{metric_id}/{attribute}", () -> {
+                    get(ctx -> {
+                        metricsHandler.getMetricByID(
                                 ctx,
                                 ctx.pathParam("metric_name"),
                                 ctx.pathParam("metric_id"),
                                 ctx.pathParam("attribute")
-                        ));
+                        );
                     });
 
+                    post(ctx -> {
+                        String metricName = ctx.pathParam("metric_name");
+                        String metricId = ctx.pathParam("metric_id");
+                        String attribute = ctx.pathParam("attribute");
+
+                        System.out.printf("metricName=%s, metricId=%s, attribute=%s%n",
+                                metricName, metricId, attribute);
+
+                        if ("numaccessed".equals(attribute.toLowerCase())) {
+                            metricsHandler.incrementNumAccessed(metricName, metricId);
+                            ctx.status(201).result("Metric updated or created.");
+                        } else {
+                            ctx.status(400).result("Unsupported attribute: " + attribute);
+                        }
+                    });
                 });
             });
         }).start(7072);
 
-        // Console output
-        System.out.println(
-                "✅ Javalin server started at http://localhost:7071");
-        System.out.println(
-                "📘 Swagger UI: http://localhost:7071/swagger");
-        System.out.println(
-                "📕 ReDoc UI:   http://localhost:7071/redoc");
-        System.out.println(
-                "📘 OpenAPI:   http://localhost:7071/openapi");
+        // Correct console output
+        System.out.println("✅ Javalin server started at http://localhost:7072");
+        System.out.println("📘 Swagger UI: http://localhost:7072/swagger");
+        System.out.println("📕 ReDoc UI:   http://localhost:7072/redoc");
+        System.out.println("📘 OpenAPI:   http://localhost:7072/openapi");
     }
 }

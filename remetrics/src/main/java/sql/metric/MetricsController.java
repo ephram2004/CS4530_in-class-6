@@ -35,9 +35,9 @@ public class MetricsController {
             ObjectMapper mapper = new ObjectMapper();
 
             ObjectNode node = mapper.createObjectNode();
-            node.put("metricName", metricName);
-            node.put("metricID", metricID);
-            node.put("numAccessed", 0);
+            node.put("metric_name", metricName);
+            node.put("metric_id", metricID);
+            node.put("num_accessed", 0);
 
             metrics.addOrIncrementNumAccessed(new Metric(node));
 

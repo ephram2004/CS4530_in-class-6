@@ -42,34 +42,33 @@ public class SalesDAO extends ADAO {
     }
 
     private DynamicHomeSale mapResultSetToDynamicHomeSale(ResultSet rs) throws SQLException {
-        List<Map<String, Object>> rows = new ArrayList<>();
         ResultSetMetaData meta = rs.getMetaData();
         int columnCount = meta.getColumnCount();
 
-        while (rs.next()) {
+        if (rs.next()) {
             Map<String, Object> row = new HashMap<>();
             for (int i = 1; i <= columnCount; i++) {
                 String columnName = meta.getColumnLabel(i); // or getColumnName(i)
                 Object value = rs.getObject(i);
                 row.put(columnName, value);
             }
-            rows.add(row);
-        }
 
-        ObjectMapper mapper = new ObjectMapper();
-        return new DynamicHomeSale(mapper.valueToTree(rows));
+            System.out.println(row); // for debugging
+            ObjectMapper mapper = new ObjectMapper();
+            return new DynamicHomeSale(mapper.valueToTree(row)); // single object node
+        } else {
+            throw new SQLException("No results in ResultSet");
+        }
     }
 
     public Optional<DynamicHomeSale> getSaleById(int saleID) throws SQLException {
         String sql = "SELECT * FROM property_sales WHERE property_id = ?";
-        DynamicHomeSale sale = null;
+        DynamicHomeSale sale;
         try (
                 Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, saleID);
             try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    sale = mapResultSetToDynamicHomeSale(rs);
-                }
+                sale = mapResultSetToDynamicHomeSale(rs);
             }
         }
         return Optional.ofNullable(sale);

@@ -1,40 +1,43 @@
 package main;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import credentials.Credentials;
+import helper.CSVToJson;
 import helper.Helper;
-import credentials.Credentials;;
+import sql.sales.DynamicHomeSale;
 
 // TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
 
+    private static final String SQL_TABLE_NAME = "property_sales";
+    private static final String PATH_TO_FILE = "./nsw_property_data.csv";
+    private static final String JDBC_URL = "jdbc:postgresql://localhost:5432/"
+            + Credentials.get("POSTGRES_DB");
+    private static final String JDBC_USER = Credentials.get("POSTGRES_USER");
+    private static final String JDBC_PASSWORD = Credentials.get("POSTGRES_PASSWORD");
     private static final CSVFormat CSV_FORMAT = CSVFormat.Builder.create(CSVFormat.RFC4180)
             .setHeader()
             .setSkipHeaderRecord(true)
             .build();
 
-    private static final String PATH_TO_FILE = "/Users/ejacquin/Desktop/Northeastern/School_Work/"
-            + "Summer_II_2025/CS4530/In-Class/CS4530_in-class-6/nsw_property_data.csv";
-    private static final String JDBC_URL = "jdbc:postgresql://localhost:5432/" +
-            Credentials.get("POSTGRES_DB");
-    private static final String JDBC_USER = Credentials.get("POSTGRES_USER");
-    private static final String JDBC_PASSWORD = Credentials.get("POSTGRES_PASSWORD");
-
     public static void main(String[] args) {
-
-        // TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the
-        // highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
         System.out.println("Hello and welcome!");
 
         // Path of CSV file to read
@@ -42,85 +45,71 @@ public class Main {
 
         try (CSVParser parser = CSVParser.parse(csvFilePath, StandardCharsets.UTF_8, CSV_FORMAT)) {
             System.out.println("File opened");
-            String headers = parser.getHeaderNames().toString();
+            List<String> headers = parser.getHeaderNames();
             System.out.println("headers: " + headers);
+
+            String sql = DynamicHomeSale
+                    .insertBySQLBuilder(DynamicHomeSale.class, SQL_TABLE_NAME);
+
+            System.out.println("SQL INSERT cmd: " + sql);
 
             try (Connection conn = DriverManager
                     .getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD)) {
 
                 conn.setAutoCommit(false); // group many inserts into one commit
 
-                String sql = "INSERT INTO property_sales (property_id, download_date, " +
-                        "council_name, purchase_price, address, post_code, property_type, " +
-                        "strata_lot_number, property_name, area, area_type, " +
-                        "contract_date, settlement_date, zoning, nature_of_property, " +
-                        "primary_purpose, legal_description) " +
-                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
                 try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                    List<CSVRecord> skippedRows = new ArrayList<>();
-                    // Iterate over input CSV records
                     int count = 0;
+                    long saleId = 0;
+                    List<CSVRecord> skippedRows = new ArrayList<>();
+
                     for (final CSVRecord record : parser) {
+                        String key = "sale_id:" + saleId;
+
                         Integer propId = Helper.parseIntSafe(record.get("property_id"));
                         if (propId == null) {
                             skippedRows.add(record);
                             continue;
                         }
 
-                        stmt.setInt(1, propId);
-                        stmt.setDate(2,
-                                Helper.parseDateSafe(record.get("download_date")));
-                        stmt.setString(3,
-                                Helper.parseStringSafe(record.get("council_name")));
-                        stmt.setObject(4,
-                                Helper.parseIntSafe(record.get("purchase_price")));
-                        stmt.setString(5,
-                                Helper.parseStringSafe(record.get("address")));
-                        stmt.setObject(6,
-                                Helper.parseIntSafe(record.get("post_code")));
-                        stmt.setString(7,
-                                Helper.parseStringSafe(record.get("property_type")));
-                        stmt.setObject(8,
-                                Helper.parseIntSafe(record.get("strata_lot_number")));
-                        stmt.setString(9,
-                                Helper.parseStringSafe(record.get("property_name")));
-                        stmt.setObject(10,
-                                Helper.parseDoubleSafe(record.get("area")));
-                        stmt.setString(11,
-                                Helper.parseStringSafe(record.get("area_type")));
-                        stmt.setDate(12,
-                                Helper.parseDateSafe(record.get("contract_date")));
-                        stmt.setDate(13,
-                                Helper.parseDateSafe(record.get("settlement_date")));
-                        stmt.setString(14,
-                                Helper.parseStringSafe(record.get("zoning")));
-                        stmt.setString(15,
-                                Helper.parseStringSafe(record.get("nature_of_property")));
-                        stmt.setString(16,
-                                Helper.parseStringSafe(record.get("primary_purpose")));
-                        stmt.setString(17,
-                                Helper.parseStringSafe(record.get("legal_description")));
+                        JsonNode json = CSVToJson.csvRecordToJson(record);
+                        DynamicHomeSale hs = new DynamicHomeSale(json);
+
+                        try {
+                            hs.postgressBatchInsert(stmt);
+                        } catch (IllegalAccessException e) {
+                            System.out.println(
+                                    "Error accessing non-existing field! Skipping..." + e);
+                        } catch (SQLException e) {
+                            System.err.println("Error accessing Database! Closing..." + e);
+                            return;
+                        }
 
                         stmt.addBatch();
-
-                        System.out.println("Added new row. PropertyID = " + propId);
 
                         // execute batch every 1000 rows
                         if (++count % 1000 == 0) {
                             stmt.executeBatch();
                         }
+
+                        if (count % 100 == 0) {
+                            System.out.println("Loaded up to: " + key);
+                        }
+
+                        saleId++;
                     }
 
                     stmt.executeBatch(); // execute remaining
                     conn.commit(); // one commit for all rows
-                    System.out.println("Total records: " + count);
-                    System.out.println("Skipped " + skippedRows.size() + " bad rows.");
+
+                    System.out.println("✅ Imported " + count + " rows into Redis.");
+                    System.out.println("⚠️ Skipped " + skippedRows.size() + " malformed rows.");
+
                 } catch (SQLException e) {
-                    System.err.println("Error during insert: " + e.getMessage());
+                    System.err.println("Error accessing Database! Closing..." + e);
                     try {
                         conn.rollback();
-                        System.err.println("Transaction rolled back.");
+                        System.err.println("Transaction rolled back. Bye...");
                     } catch (SQLException anotherone) {
                         System.err.println("Rollback failed: " + anotherone.getMessage());
                     }

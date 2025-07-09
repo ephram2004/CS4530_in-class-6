@@ -9,25 +9,20 @@ import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.redoc.ReDocPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import sql.sales.DynamicHomeSale;
-import sql.sales.SalesController;
-import sql.sales.SalesDAO;
-import sql.metric.MetricsDAO;
-import sql.metric.MetricsController;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.URI;
 
 public class REServer {
 
     public static void main(String[] args) {
         // exporting schema to JSON file
         HelperSQL.exportSchemaToFile(DynamicHomeSale.class);
+        String salesUrl = "http://localhost:7071/sales/";
 
-        // in memory test data store
-        var sales = new SalesDAO();
-        var metrics = new MetricsDAO();
-
-        // API implementation
-        SalesController salesHandler = new SalesController(sales);
-
-        MetricsController metricsHandler = new MetricsController(metrics);
+        // client for sending reqs
+        HttpClient client = HttpClient.newHttpClient();
 
         Javalin.create(config -> {
             // OpenAPI doc plugins
@@ -61,47 +56,165 @@ public class REServer {
                         boolean hasFilter = councilName != null || propertyType != null || areaType != null
                                 || minPrice >= 0 || maxPrice >= 0;
 
+                        String url = salesUrl;
                         if (hasFilter) {
-                            salesHandler.filterSalesByCriteria(ctx, councilName, propertyType, minPrice, maxPrice,
-                                    areaType);
-                        } else {
-                            salesHandler.getAllSales(ctx);
+                            // Build query parameters
+                            StringBuilder queryParams = new StringBuilder();
+                            if (councilName != null)
+                                queryParams.append("councilname=").append(councilName).append("&");
+                            if (propertyType != null)
+                                queryParams.append("propertytype=").append(propertyType).append("&");
+                            if (areaType != null)
+                                queryParams.append("areatype=").append(areaType).append("&");
+                            if (minPrice >= 0)
+                                queryParams.append("minprice=").append(minPrice).append("&");
+                            if (maxPrice >= 0)
+                                queryParams.append("maxprice=").append(maxPrice).append("&");
+
+                            if (queryParams.length() > 0) {
+                                url += "?" + queryParams.substring(0, queryParams.length() - 1);
+                            }
+                        }
+
+                        try {
+                            HttpRequest req = HttpRequest.newBuilder()
+                                    .uri(URI.create(url))
+                                    .GET()
+                                    .build();
+                            HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
+                            ctx.result(res.body());
+                        } catch (Exception e) {
+                            ctx.result("Error connecting to sales service: " + e.getMessage());
+                            ctx.status(503);
                         }
                     });
 
-                    post(salesHandler::createSale);
+                    post(ctx -> {
+                        try {
+                            HttpRequest req = HttpRequest.newBuilder()
+                                    .uri(URI.create(salesUrl))
+                                    .POST(HttpRequest.BodyPublishers.ofString(ctx.body()))
+                                    .header("Content-Type", "application/json")
+                                    .build();
+                            HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
+                            ctx.result(res.body());
+                        } catch (Exception e) {
+                            ctx.result("Error connecting to sales service: " + e.getMessage());
+                            ctx.status(503);
+                        }
+                    });
 
-                    path("postcode/{postcode}", () -> { 
+                    path("postcode/{postcode}", () -> {
                         get(ctx -> {
-                        // increment access count
-                        metricsHandler.incrementNumAccessed("postcode", ctx.pathParam("postcode"));
-                        salesHandler.findSaleByPostCode(ctx, Integer.parseInt(ctx.pathParam("postcode")));
+                            String postcode = ctx.pathParam("postcode");
+                            String url = salesUrl + "postcode/" + postcode;
+                            try {
+                                HttpRequest salesReq = HttpRequest.newBuilder()
+                                        .uri(URI.create(url))
+                                        .GET()
+                                        .build();
+                                HttpResponse<String> res = client.send(salesReq, HttpResponse.BodyHandlers.ofString());
+
+                                HttpRequest metricsReq = HttpRequest.newBuilder()
+                                        .uri(URI.create(salesUrl + "postcode/" + postcode + "/numaccessed"))
+                                        .POST(HttpRequest.BodyPublishers.noBody())
+                                        .build();
+                                client.send(metricsReq, HttpResponse.BodyHandlers.ofString());
+                                ctx.result(res.body());
+                            } catch (Exception e) {
+                                ctx.result("Error connecting to sales service: " + e.getMessage());
+                                ctx.status(503);
+                            }
                         });
                     });
 
-                    path("price-history/propertyId/{propertyID}", ()
-                            -> get(ctx -> salesHandler.findPriceHistoryByPropertyId(ctx, Integer.parseInt(ctx.pathParam("propertyID"))))
-                    );
-                    
-                    path("average/{postcode}", ()
-                            -> get(ctx -> salesHandler.averagePrice(ctx, Integer.parseInt(ctx.pathParam("postcode"))))
-                    );
+                    path("average/{postcode}", () -> get(ctx -> {
+                        String postcode = ctx.pathParam("postcode");
+                        String url = salesUrl + "average/" + postcode;
+                        try {
+                            HttpRequest salesReq = HttpRequest.newBuilder()
+                                    .uri(URI.create(url))
+                                    .GET()
+                                    .build();
+                            HttpResponse<String> res = client.send(salesReq, HttpResponse.BodyHandlers.ofString());
 
-                    path("{saleID}", () -> { 
-                        get(ctx -> {
-                        // increment access count
-                        metricsHandler.incrementNumAccessed("propertyid", ctx.pathParam("saleID"));
-                        salesHandler.getSaleByID(ctx, Integer.parseInt(ctx.pathParam("saleID")));
-                        });
-                    });
+                            HttpRequest metricsReq = HttpRequest.newBuilder()
+                                    .uri(URI.create(salesUrl + "postcode/" + postcode + "/numaccessed"))
+                                    .POST(HttpRequest.BodyPublishers.noBody())
+                                    .build();
+                            client.send(metricsReq, HttpResponse.BodyHandlers.ofString()); // optional: ignore
+
+                            ctx.result(res.body());
+                        } catch (Exception e) {
+                            ctx.result("Error connecting to sales service: " + e.getMessage());
+                            ctx.status(503);
+                        }
+                    }));
+
+                    path("price-history/propertyId/{propertyID}", () -> get(ctx -> {
+                        String propertyID = ctx.pathParam("propertyID");
+                        String url = salesUrl + "price-history/propertyId/" + propertyID;
+                        try {
+                            HttpRequest salesReq = HttpRequest.newBuilder()
+                                    .uri(URI.create(url))
+                                    .GET()
+                                    .build();
+                            HttpResponse<String> res = client.send(salesReq, HttpResponse.BodyHandlers.ofString());
+
+                            HttpRequest metricsReq = HttpRequest.newBuilder()
+                                    .uri(URI.create(salesUrl + "propertyid/" + propertyID + "/numaccessed"))
+                                    .POST(HttpRequest.BodyPublishers.noBody())
+                                    .build();
+                            client.send(metricsReq, HttpResponse.BodyHandlers.ofString());
+
+                            ctx.result(res.body());
+                        } catch (Exception e) {
+                            ctx.result("Error connecting to sales service: " + e.getMessage());
+                            ctx.status(503);
+                        }
+                    }));
+
+                    path("{saleID}", () -> get(ctx -> {
+                        String saleID = ctx.pathParam("saleID");
+                        String url = salesUrl + saleID;
+                        try {
+                            HttpRequest req = HttpRequest.newBuilder()
+                                    .uri(URI.create(url))
+                                    .GET()
+                                    .build();
+                            HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
+
+                            HttpRequest metricsReq = HttpRequest.newBuilder()
+                                    .uri(URI.create(salesUrl + "saleid/" + saleID + "/numaccessed"))
+                                    .POST(HttpRequest.BodyPublishers.noBody())
+                                    .build();
+                            client.send(metricsReq, HttpResponse.BodyHandlers.ofString());
+
+                            ctx.result(res.body());
+                        } catch (Exception e) {
+                            ctx.result("Error connecting to sales service: " + e.getMessage());
+                            ctx.status(503);
+                        }
+                    }));
 
                     path("{metric_name}/{metric_id}/{attribute}", () -> {
-                        get(ctx -> metricsHandler.getMetricByID(
-                            ctx,
-                            ctx.pathParam("metric_name"),  
-                            ctx.pathParam("metric_id"),   
-                            ctx.pathParam("attribute")     
-                        ));
+                        get(ctx -> {
+                            String metricName = ctx.pathParam("metric_name");
+                            String metricId = ctx.pathParam("metric_id");
+                            String attribute = ctx.pathParam("attribute");
+                            String url = salesUrl + metricName + "/" + metricId + "/" + attribute;
+                            try {
+                                HttpRequest req = HttpRequest.newBuilder()
+                                        .uri(URI.create(url))
+                                        .GET()
+                                        .build();
+                                HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
+                                ctx.result(res.body());
+                            } catch (Exception e) {
+                                ctx.result("Error connecting to metrics service: " + e.getMessage());
+                                ctx.status(503);
+                            }
+                        });
                     });
                 });
             });

@@ -5,10 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.cs4530.team6</groupId>
-    <artifactId>resales</artifactId>
+    <artifactId>RESales</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
 
-        <properties>
+    <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -29,6 +30,12 @@
         <dependency>
             <groupId>org.cs4530.team6</groupId>
             <artifactId>RECredentials</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.cs4530.team6</groupId>
+            <artifactId>REServer</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
@@ -63,25 +70,30 @@
         </dependency>
 
         <dependency>
-         <groupId>io.javalin</groupId>
-         <artifactId>javalin-bundle</artifactId>
-         <version>6.7.0</version>
-     </dependency>
-     <dependency>
-         <groupId>io.javalin.community.openapi</groupId>
-         <artifactId>javalin-openapi-plugin</artifactId>
-         <version>6.7.0</version>
-     </dependency>
-     <dependency>
-         <groupId>io.javalin.community.openapi</groupId>
-         <artifactId>javalin-swagger-plugin</artifactId>
-         <version>6.7.0</version>
-     </dependency>
-     <dependency>
-         <groupId>io.javalin.community.openapi</groupId>
-         <artifactId>javalin-redoc-plugin</artifactId>
-         <version>6.7.0</version>
-     </dependency>
+            <groupId>io.javalin</groupId>
+            <artifactId>javalin-bundle</artifactId>
+            <version>6.7.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.javalin.community.openapi</groupId>
+            <artifactId>javalin-openapi-plugin</artifactId>
+            <version>6.7.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.javalin.community.openapi</groupId>
+            <artifactId>javalin-swagger-plugin</artifactId>
+            <version>6.7.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.javalin.community.openapi</groupId>
+            <artifactId>javalin-redoc-plugin</artifactId>
+            <version>6.7.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.cs4530.team6</groupId>
+            <artifactId>RESQLClasses</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
       
     </dependencies>
     <build>

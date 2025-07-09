@@ -60,16 +60,21 @@ public class REServer {
                         if (hasFilter) {
                             // Build query parameters
                             StringBuilder queryParams = new StringBuilder();
-                            if (councilName != null)
+                            if (councilName != null) {
                                 queryParams.append("councilname=").append(councilName).append("&");
-                            if (propertyType != null)
+                            }
+                            if (propertyType != null) {
                                 queryParams.append("propertytype=").append(propertyType).append("&");
-                            if (areaType != null)
+                            }
+                            if (areaType != null) {
                                 queryParams.append("areatype=").append(areaType).append("&");
-                            if (minPrice >= 0)
+                            }
+                            if (minPrice >= 0) {
                                 queryParams.append("minprice=").append(minPrice).append("&");
-                            if (maxPrice >= 0)
+                            }
+                            if (maxPrice >= 0) {
                                 queryParams.append("maxprice=").append(maxPrice).append("&");
+                            }
 
                             if (queryParams.length() > 0) {
                                 url += "?" + queryParams.substring(0, queryParams.length() - 1);

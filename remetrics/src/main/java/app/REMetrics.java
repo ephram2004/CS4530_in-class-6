@@ -4,19 +4,12 @@ import helpers.HelperSQL;
 import io.javalin.Javalin;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
-import static io.javalin.apibuilder.ApiBuilder.post;
-
-import java.net.URI;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-
 import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.redoc.ReDocPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import sql.metric.Metric;
 import sql.metric.MetricsController;
 import sql.metric.MetricsDAO;
-
 
 public class REMetrics {
 
@@ -52,12 +45,13 @@ public class REMetrics {
                 path("metrics", () -> {
                     path("{metric_name}/{metric_id}/{attribute}", () -> {
                         get(ctx -> metricsHandler.getMetricByID(
-                            ctx,
-                            ctx.pathParam("metric_name"),  
-                            ctx.pathParam("metric_id"),   
-                            ctx.pathParam("attribute")     
+                                ctx,
+                                ctx.pathParam("metric_name"),
+                                ctx.pathParam("metric_id"),
+                                ctx.pathParam("attribute")
                         ));
                     });
+
                 });
             });
         }).start(7072);

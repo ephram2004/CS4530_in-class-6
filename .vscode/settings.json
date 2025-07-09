@@ -1,4 +1,5 @@
 {
-    "java.configuration.updateBuildConfiguration": "automatic",
-    "java.dependency.syncWithFolderExplorer": true
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.dependency.syncWithFolderExplorer": true,
+  "java.project.sourcePaths": ["RESales/src", "REProperty/src/main/java/app"]
 }

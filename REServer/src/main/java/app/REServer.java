@@ -15,6 +15,7 @@ import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.redoc.ReDocPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import sql.sales.DynamicHomeSale;
+import kafka.MetricsKafkaProducer;
 
 public class REServer {
 
@@ -22,10 +23,12 @@ public class REServer {
         // exporting schema to JSON file
         HelperSQL.exportSchemaToFile(DynamicHomeSale.class);
         String salesUrl = "http://localhost:7071/sales/";
-        String metricsUrl = "http://localhost:7072/metrics/";
 
         // client for sending reqs
         HttpClient client = HttpClient.newHttpClient();
+        
+        // Kafka producer for metrics
+        MetricsKafkaProducer metricsProducer = new MetricsKafkaProducer();
 
         Javalin app = Javalin.create(config -> {
             // OpenAPI Plugin
@@ -141,12 +144,8 @@ public class REServer {
                                         = client.send(salesReq,
                                                 HttpResponse.BodyHandlers.ofString());
 
-                                HttpRequest metricsReq = HttpRequest.newBuilder()
-                                        .uri(URI.create(metricsUrl + "postcode/"
-                                                + postcode + "/numaccessed"))
-                                        .POST(HttpRequest.BodyPublishers.noBody())
-                                        .build();
-                                client.send(metricsReq, HttpResponse.BodyHandlers.ofString());
+                                // Emit Kafka event for metrics
+                                metricsProducer.emitMetricEvent("postcode", postcode, "access");
                                 ctx.result(res.body());
                             } catch (IllegalArgumentException e) {
                                 ctx.status(400).result("Invalid URL format: " + e.getMessage());
@@ -171,13 +170,8 @@ public class REServer {
                             HttpResponse<String> res
                                     = client.send(salesReq, HttpResponse.BodyHandlers.ofString());
 
-                            HttpRequest metricsReq = HttpRequest.newBuilder()
-                                    .uri(URI.create(metricsUrl + "postcode/"
-                                            + postcode + "/numaccessed"))
-                                    .POST(HttpRequest.BodyPublishers.noBody())
-                                    .build();
-                            client.send(metricsReq,
-                                    HttpResponse.BodyHandlers.ofString()); // optional: ignore
+                            // Emit Kafka event for metrics
+                            metricsProducer.emitMetricEvent("postcode", postcode, "access");
 
                             ctx.result(res.body());
                         } catch (IllegalArgumentException e) {
@@ -202,12 +196,8 @@ public class REServer {
                             HttpResponse<String> res
                                     = client.send(salesReq, HttpResponse.BodyHandlers.ofString());
 
-                            HttpRequest metricsReq = HttpRequest.newBuilder()
-                                    .uri(URI.create(metricsUrl + "propertyid/"
-                                            + propertyID + "/numaccessed"))
-                                    .POST(HttpRequest.BodyPublishers.noBody())
-                                    .build();
-                            client.send(metricsReq, HttpResponse.BodyHandlers.ofString());
+                            // Emit Kafka event for metrics
+                            metricsProducer.emitMetricEvent("propertyid", propertyID, "access");
 
                             ctx.result(res.body());
                         } catch (IllegalArgumentException e) {
@@ -232,12 +222,8 @@ public class REServer {
                             HttpResponse<String> res
                                     = client.send(req, HttpResponse.BodyHandlers.ofString());
 
-                            HttpRequest metricsReq = HttpRequest.newBuilder()
-                                    .uri(URI.create(metricsUrl + "saleid/"
-                                            + saleID + "/numaccessed"))
-                                    .POST(HttpRequest.BodyPublishers.noBody())
-                                    .build();
-                            client.send(metricsReq, HttpResponse.BodyHandlers.ofString());
+                            // Emit Kafka event for metrics
+                            metricsProducer.emitMetricEvent("saleid", saleID, "access");
 
                             ctx.result(res.body());
                         } catch (IllegalArgumentException e) {
@@ -256,24 +242,10 @@ public class REServer {
                             String metricName = ctx.pathParam("metric_name");
                             String metricId = ctx.pathParam("metric_id");
                             String attribute = ctx.pathParam("attribute");
-                            String url = metricsUrl + metricName + "/" + metricId + "/" + attribute;
-                            try {
-                                HttpRequest req = HttpRequest.newBuilder()
-                                        .uri(URI.create(url))
-                                        .GET()
-                                        .build();
-                                HttpResponse<String> res
-                                        = client.send(req, HttpResponse.BodyHandlers.ofString());
-                                ctx.result(res.body());
-                            } catch (IllegalArgumentException e) {
-                                ctx.status(400).result("Invalid URL format: " + e.getMessage());
-                            } catch (IOException e) {
-                                ctx.status(503);
-                                ctx.result("Error connecting to sales service: " + e.getMessage());
-                            } catch (InterruptedException e) {
-                                ctx.result("Request interrupted: " + e.getMessage());
-                                ctx.status(503);
-                            }
+                            // For metrics queries, we'll need to implement a different approach
+                            // since we're now using Kafka instead of HTTP for metrics
+                            ctx.result("Metrics queries now handled via Kafka - use direct metrics service");
+                            ctx.status(200);
                         });
                     });
                 });
@@ -282,6 +254,12 @@ public class REServer {
         );
 
         app.start(7070);
+
+        // Add shutdown hook to close Kafka producer
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Shutting down Kafka producer...");
+            metricsProducer.close();
+        }));
 
         // Console output
         System.out.println(
@@ -292,5 +270,7 @@ public class REServer {
                 "📕 ReDoc UI:   http://localhost:7070/redoc");
         System.out.println(
                 "📘 OpenAPI:   http://localhost:7070/openapi");
+        System.out.println(
+                "📊 Kafka metrics enabled - events sent to real-estate-metrics topic");
     }
 }

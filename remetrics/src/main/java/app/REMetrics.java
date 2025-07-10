@@ -11,6 +11,9 @@ import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import sql.metric.Metric;
 import sql.metric.MetricsController;
 import sql.metric.MetricsDAO;
+import kafka.MetricsKafkaListener;
+import kafka.MetricsProcessor;
+import kafka.MetricsProcessorImpl;
 
 public class REMetrics {
 
@@ -21,6 +24,17 @@ public class REMetrics {
         // DAO and Controller setup
         var metricsDAO = new MetricsDAO();
         MetricsController metricsHandler = new MetricsController(metricsDAO);
+
+        // Kafka setup
+        MetricsProcessor metricsProcessor = new MetricsProcessorImpl(metricsDAO);
+        MetricsKafkaListener kafkaListener = new MetricsKafkaListener(metricsProcessor);
+        
+        // Start Kafka listener in background thread
+        Thread kafkaThread = new Thread(() -> {
+            kafkaListener.startListening();
+        });
+        kafkaThread.setDaemon(true);
+        kafkaThread.start();
 
         // Start server
         Javalin.create(config -> {

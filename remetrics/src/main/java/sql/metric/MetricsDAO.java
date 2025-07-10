@@ -30,9 +30,15 @@ public class MetricsDAO extends ADAO {
         }
     }
 
+<<<<<<< Updated upstream
     public Optional<Metric> findMetricByID(String metricID, String metricName) throws SQLException {
         String sql = "SELECT * FROM metrics WHERE metric_id = ? AND metric_name = ?";
         Metric metric;
+=======
+    public Optional<Metric> findMetricByID(String metricID, String metricName, String attributeName) throws SQLException {
+        String sql = "SELECT count FROM metrics WHERE metric_id = ? AND metric_name = ? AND attribute_name = ?";
+        Metric metric = null;
+>>>>>>> Stashed changes
         try (
                 Connection conn = getConnection(); PreparedStatement stmt
                 = conn.prepareStatement(sql)) {

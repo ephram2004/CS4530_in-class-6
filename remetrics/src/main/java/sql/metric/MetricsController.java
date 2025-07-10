@@ -65,7 +65,11 @@ public class MetricsController {
             })
     public void getMetricByID(Context ctx, String metricName, String metricID, String attrName) {
         try {
+<<<<<<< Updated upstream
             Optional<Metric> metric = metrics.findMetricByID(metricID, metricName);
+=======
+            Optional<Metric> metric = metrics.findMetricByID(metricName, metricID, attrName);
+>>>>>>> Stashed changes
             metric.map(ctx::json).orElseGet(() -> {
                 ctx.result("Metric not found");
                 ctx.status(404);

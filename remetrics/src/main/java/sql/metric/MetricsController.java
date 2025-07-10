@@ -35,15 +35,19 @@ public class MetricsController {
             ObjectMapper mapper = new ObjectMapper();
 
             ObjectNode node = mapper.createObjectNode();
-            node.put("metricName", metricName);
-            node.put("metricID", metricID);
-            node.put("numAccessed", 0);
+            node.put("metric_name", metricName);
+            node.put("metric_id", metricID);
+            node.put("num_accessed", 0);
 
             metrics.addOrIncrementNumAccessed(new Metric(node));
 
             System.out.println("Number of visits metric updated");
-        } catch (Exception e) {
-            System.out.println("Failed to add metric: " + e.getMessage());
+        } catch (NullPointerException e) {
+            System.out.println("Null pointer error while adding metric: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            System.out.println("Invalid argument when creating metric: " + e.getMessage());
+        } catch (SQLException e) {
+            System.out.println("Error accessing SQL database: " + e.getMessage());
         }
     }
 
@@ -61,7 +65,7 @@ public class MetricsController {
             })
     public void getMetricByID(Context ctx, String metricName, String metricID, String attrName) {
         try {
-            Optional<Metric> metric = metrics.findMetricByID(metricName, metricID);
+            Optional<Metric> metric = metrics.findMetricByID(metricID, metricName);
             metric.map(ctx::json).orElseGet(() -> {
                 ctx.result("Metric not found");
                 ctx.status(404);

@@ -2,11 +2,11 @@ package helper;
 
 import java.sql.Date;
 
-public class Helper {
+public class DataLoaderHelper {
 
     public static Integer parseIntSafe(String value) {
         try {
-            return (value == null || value.isBlank()) ? null : Integer.parseInt(value.trim());
+            return (value == null || value.isBlank()) ? null : Integer.valueOf(value.trim());
         } catch (NumberFormatException e) {
             return null;
         }
@@ -14,7 +14,7 @@ public class Helper {
 
     public static Double parseDoubleSafe(String value) {
         try {
-            return (value == null || value.isBlank()) ? null : Double.parseDouble(value.trim());
+            return (value == null || value.isBlank()) ? null : Double.valueOf(value.trim());
         } catch (NumberFormatException e) {
             return null;
         }

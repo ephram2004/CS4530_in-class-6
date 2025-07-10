@@ -13,42 +13,39 @@ import java.util.Optional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import sql.ADAO;
+import sqlobjs.ADAO;
 
 public class MetricsDAO extends ADAO {
 
     public void addOrIncrementNumAccessed(Metric metric) throws SQLException {
-        try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(
-                "INSERT INTO public.metrics (metric_name, metric_id, num_accessed)\n"
-                + //
-                "VALUES (?, ?, 1)\n"
-                + //
-                "ON CONFLICT (metric_name, metric_id)\n"
-                + //
-                "DO UPDATE SET num_accessed = metrics.num_accessed + 1;")) {
+        try (Connection conn = getConnection(); PreparedStatement stmt
+                = conn.prepareStatement(""" 
+                INSERT INTO public.metrics 
+                (metric_name, metric_id, num_accessed) VALUES (?, ?, 1) ON CONFLICT 
+                (metric_name, metric_id) DO UPDATE SET num_accessed = metrics.num_accessed + 1;"""
+                )) {
             stmt.setString(1, metric.getMetricName());
-            stmt.setString(2, metric.getMetricID());
+            stmt.setString(2, metric.getMetricId());
             stmt.executeUpdate();
         }
     }
 
     public Optional<Metric> findMetricByID(String metricID, String metricName) throws SQLException {
         String sql = "SELECT * FROM metrics WHERE metric_id = ? AND metric_name = ?";
-        Metric metric = null;
+        Metric metric;
         try (
-                Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+                Connection conn = getConnection(); PreparedStatement stmt
+                = conn.prepareStatement(sql)) {
             stmt.setString(1, metricID);
             stmt.setString(2, metricName);
             try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    metric = this.mapResultSetToMetric(rs);
-                }
+                metric = this.mapResultSetToMetric(rs).get(0);
             }
         }
         return Optional.ofNullable(metric);
     }
 
-    private Metric mapResultSetToMetric(ResultSet rs) throws SQLException {
+    private List<Metric> mapResultSetToMetric(ResultSet rs) throws SQLException {
         List<Map<String, Object>> rows = new ArrayList<>();
         ResultSetMetaData meta = rs.getMetaData();
         int columnCount = meta.getColumnCount();
@@ -63,7 +60,13 @@ public class MetricsDAO extends ADAO {
             rows.add(row);
         }
 
+        List<Metric> metrics = new ArrayList<>();
         ObjectMapper mapper = new ObjectMapper();
-        return new Metric(mapper.valueToTree(rows));
+
+        for (Map<String, Object> row : rows) {
+            metrics.add(new Metric(mapper.valueToTree(row)));
+
+        }
+        return metrics;
     }
 }

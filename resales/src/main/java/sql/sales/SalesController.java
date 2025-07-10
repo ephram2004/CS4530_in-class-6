@@ -1,5 +1,6 @@
 package sql.sales;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
@@ -23,12 +24,13 @@ public class SalesController {
         this.homeSales = homeSales;
     }
 
-    @OpenApi(summary = "Create a new home sale", operationId = "createSale", path = "/sales", methods = HttpMethod.POST, tags = {
-        "Sales"}, requestBody = @OpenApiRequestBody(content = {
+    @OpenApi(summary = "Create a new home sale", operationId = "createSale",
+            path = "/sales", methods = HttpMethod.POST, tags = {"Sales"},
+            requestBody = @OpenApiRequestBody(content = {
         @OpenApiContent(from = DynamicHomeSale.class)}), responses = {
-        @OpenApiResponse(status = "201"),
-        @OpenApiResponse(status = "400")
-    })
+                @OpenApiResponse(status = "201"),
+                @OpenApiResponse(status = "400")
+            })
     // implements POST /sales
     public void createSale(Context ctx) {
 
@@ -54,18 +56,21 @@ public class SalesController {
             homeSales.newSale(sale);
             ctx.result("Sale Created");
             ctx.status(201);
-        } catch (Exception e) {
-            ctx.result("Failed to add sale: " + e.getMessage());
-            ctx.status(400);
+        } catch (IllegalArgumentException e) {
+            ctx.status(400).result("Invalid URL format: " + e.getMessage());
+        } catch (IOException e) {
+            ctx.status(503).result("Error connecting to sales service: " + e.getMessage());
+        } catch (SQLException e) {
+            ctx.status(503).result("Error connecting to SQL database: " + e.getMessage());
         }
     }
 
-    @OpenApi(summary = "Get all sales", operationId = "getAllSales", path = "/sales", methods = HttpMethod.GET, tags = {
-        "Sales"}, responses = {
-        @OpenApiResponse(status = "200", content = {
+    @OpenApi(summary = "Get all sales", operationId = "getAllSales", path = "/sales",
+            methods = HttpMethod.GET, tags = {"Sales"}, responses = {
+                @OpenApiResponse(status = "200", content = {
             @OpenApiContent(from = DynamicHomeSale[].class)}),
-        @OpenApiResponse(status = "404")
-    })
+                @OpenApiResponse(status = "404")
+            })
     // implements Get /sales
     public void getAllSales(Context ctx) {
         try {
@@ -83,14 +88,14 @@ public class SalesController {
         }
     }
 
-    @OpenApi(summary = "Get sale by ID", operationId = "getSaleById", path = "/sales/{saleID}", methods = HttpMethod.GET, tags = {
-        "Sales"}, pathParams = {
-        @OpenApiParam(name = "saleID")
-    }, responses = {
-        @OpenApiResponse(status = "200", content = {
+    @OpenApi(summary = "Get sale by ID", operationId = "getSaleById", path = "/sales/{saleID}",
+            methods = HttpMethod.GET, tags = {"Sales"}, pathParams = {
+                @OpenApiParam(name = "saleID")
+            }, responses = {
+                @OpenApiResponse(status = "200", content = {
             @OpenApiContent(from = DynamicHomeSale.class)}),
-        @OpenApiResponse(status = "404")
-    })
+                @OpenApiResponse(status = "404")
+            })
     // implements GET /sales/{saleID}
     public void getSaleByID(Context ctx, int id) {
         try {
@@ -106,14 +111,15 @@ public class SalesController {
         }
     }
 
-    @OpenApi(summary = "Get sales by postcode", operationId = "getSalesByPostcode", path = "/sales/postcode/{postcode}", methods = HttpMethod.GET, tags = {
-        "Sales"}, pathParams = {
-        @OpenApiParam(name = "postcode")
-    }, responses = {
-        @OpenApiResponse(status = "200", content = {
+    @OpenApi(summary = "Get sales by postcode", operationId = "getSalesByPostcode",
+            path = "/sales/postcode/{postcode}", methods = HttpMethod.GET, tags = {"Sales"},
+            pathParams = {
+                @OpenApiParam(name = "postcode")
+            }, responses = {
+                @OpenApiResponse(status = "200", content = {
             @OpenApiContent(from = DynamicHomeSale[].class)}),
-        @OpenApiResponse(status = "404")
-    })
+                @OpenApiResponse(status = "404")
+            })
     // Implements GET /sales/postcode/{postcodeID}
     public void findSaleByPostCode(Context ctx, int postCode) {
         try {
@@ -131,13 +137,14 @@ public class SalesController {
         }
     }
 
-    @OpenApi(summary = "Get price history (diff) by property ID", operationId = "getPriceHistory", path = "/sales/propertyId/{propertyID}", methods = HttpMethod.GET, tags = {
-        "Sales"}, pathParams = {
-        @OpenApiParam(name = "propertyID")
-    }, responses = {
-        @OpenApiResponse(status = "200"),
-        @OpenApiResponse(status = "400")
-    })
+    @OpenApi(summary = "Get price history (diff) by property ID", operationId = "getPriceHistory",
+            path = "/sales/propertyId/{propertyID}", methods = HttpMethod.GET, tags = {"Sales"},
+            pathParams = {
+                @OpenApiParam(name = "propertyID")
+            }, responses = {
+                @OpenApiResponse(status = "200"),
+                @OpenApiResponse(status = "400")
+            })
     public void findPriceHistoryByPropertyId(Context ctx, int propertyId) {
         try {
             int priceDiff = homeSales.getPriceHistory(propertyId);
@@ -148,7 +155,8 @@ public class SalesController {
         }
     }
 
-    @OpenApi(summary = "Filter sales by criteria", operationId = "filterSales", path = "/sales", // If you're keeping
+    @OpenApi(summary = "Filter sales by criteria", operationId = "filterSales",
+            path = "/sales", // If you're keeping
             // filters as query
             // params on /sales
             methods = HttpMethod.GET, tags = {"Sales"}, queryParams = {
@@ -162,11 +170,11 @@ public class SalesController {
             @OpenApiContent(from = DynamicHomeSale[].class)}),
                 @OpenApiResponse(status = "404")
             })
-    public void filterSalesByCriteria(Context ctx, String councilName, String propertyType, int minPrice, int maxPrice,
-            String areaType) {
+    public void filterSalesByCriteria(Context ctx, String councilName, String propertyType,
+            int minPrice, int maxPrice, String areaType) {
         try {
-            List<DynamicHomeSale> sales = homeSales.filterSalesByCriteria(councilName, propertyType, minPrice, maxPrice,
-                    areaType);
+            List<DynamicHomeSale> sales = homeSales
+                    .filterSalesByCriteria(councilName, propertyType, minPrice, maxPrice, areaType);
 
             if (sales.isEmpty()) {
                 ctx.result("No sales found");
@@ -181,13 +189,14 @@ public class SalesController {
         }
     }
 
-    @OpenApi(summary = "Get average sale price by postcode", operationId = "getAveragePrice", path = "/sales/average/{postcode}", methods = HttpMethod.GET, tags = {
-        "Sales"}, pathParams = {
-        @OpenApiParam(name = "postcode")
-    }, responses = {
-        @OpenApiResponse(status = "200"),
-        @OpenApiResponse(status = "400")
-    })
+    @OpenApi(summary = "Get average sale price by postcode", operationId = "getAveragePrice",
+            path = "/sales/average/{postcode}", methods = HttpMethod.GET, tags = {"Sales"},
+            pathParams = {
+                @OpenApiParam(name = "postcode")
+            }, responses = {
+                @OpenApiResponse(status = "200"),
+                @OpenApiResponse(status = "400")
+            })
     public void averagePrice(Context ctx, int postCode) {
         try {
             double averagePrice = homeSales.getAveragePrice(postCode);

@@ -2,15 +2,17 @@ package sql.sales;
 
 import java.sql.Date;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import io.micrometer.common.lang.Nullable;
-import sql.ASQLObj;
+import sqlobjs.ASQLObj;
 
 public class DynamicHomeSale extends ASQLObj {
 
     public int propertyId;
     @Nullable
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     public Date downloadDate;
     @Nullable
     public String councilName;
@@ -28,8 +30,10 @@ public class DynamicHomeSale extends ASQLObj {
     @Nullable
     public String areaType;
     @Nullable
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     public Date contractDate;
     @Nullable
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     public Date settlementDate;
     @Nullable
     public String zoning;

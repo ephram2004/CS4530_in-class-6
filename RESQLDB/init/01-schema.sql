@@ -20,3 +20,10 @@ CREATE TABLE property_sales (
     primary_purpose       TEXT,
     legal_description     TEXT
 );
+
+CREATE TABLE metrics (
+    metric_id     TEXT NOT NULL,
+    metric_name   TEXT NOT NULL,
+    num_accessed  INTEGER DEFAULT 0,
+    UNIQUE (metric_name, metric_id)
+);

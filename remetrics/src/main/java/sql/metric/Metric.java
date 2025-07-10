@@ -2,12 +2,12 @@ package sql.metric;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import sql.ASQLObj;
+import sqlobjs.ASQLObj;
 
 public class Metric extends ASQLObj {
 
     private String metricName;
-    private String metricID;
+    private String metricId;
     private int numAccessed;
 
     public Metric(JsonNode json) {
@@ -18,8 +18,8 @@ public class Metric extends ASQLObj {
         return this.metricName;
     }
 
-    public String getMetricID() {
-        return this.metricID;
+    public String getMetricId() {
+        return this.metricId;
     }
 
     public int getNumAccessed() {
@@ -28,6 +28,6 @@ public class Metric extends ASQLObj {
 
     @Override
     public String toString() {
-        return metricName + ": " + metricID;
+        return metricName + ": " + metricId;
     }
 }

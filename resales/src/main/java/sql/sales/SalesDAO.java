@@ -54,10 +54,8 @@ public class SalesDAO extends ADAO {
                 row.put(columnName, value);
             }
 
-            System.out.println("BEFORE MAPPER: " + row); // for debugging
             ObjectMapper mapper = new ObjectMapper();
             mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-            System.out.println("AFTER MAPPER: " + mapper.valueToTree(row));
             return new DynamicHomeSale(mapper.valueToTree(row)); // single object node
         } else {
             throw new SQLException("No results in ResultSet");

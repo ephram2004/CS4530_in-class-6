@@ -2,7 +2,7 @@ package helper;
 
 import java.sql.Date;
 
-public class Helper {
+public class DataLoaderHelper {
 
     public static Integer parseIntSafe(String value) {
         try {

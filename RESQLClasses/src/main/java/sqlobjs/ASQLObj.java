@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.StringJoiner;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -17,7 +18,7 @@ import helpers.HelperSQL;
 
 public abstract class ASQLObj {
 
-    protected static Map<String, Object> attributes;
+    protected final Map<String, Object> attributes;
 
     public ASQLObj(JsonNode json) {
         this.attributes = new HashMap<>();
@@ -59,7 +60,6 @@ public abstract class ASQLObj {
                 } else if (type == double.class || type == Double.class) {
                     field.set(this, Double.valueOf(rawValue));
                 } else if (type == Date.class) {
-                    System.out.println("DATE INSERTED: " + rawValue);
 
                     field.set(this, Date.valueOf(rawValue));
                 } else {
@@ -68,8 +68,11 @@ public abstract class ASQLObj {
                     field.set(this, value);
                 }
 
-            } catch (Exception e) {
-                System.out.printf("Failed to set field '%s' from JSON: %s%n",
+            } catch (IllegalAccessException | IllegalArgumentException e) {
+                System.out.printf("Reflection error setting field '%s': %s%n",
+                        fieldName, e.getMessage());
+            } catch (JsonProcessingException e) {
+                System.out.printf("Failed to parse JSON for field '%s': %s%n",
                         fieldName, e.getMessage());
             }
         }

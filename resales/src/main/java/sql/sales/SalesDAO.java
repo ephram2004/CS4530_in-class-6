@@ -68,7 +68,8 @@ public class SalesDAO extends ADAO {
         String sql = "SELECT * FROM property_sales WHERE property_id = ?";
         DynamicHomeSale sale;
         try (
-                Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+                Connection conn = getConnection(); PreparedStatement stmt
+                = conn.prepareStatement(sql)) {
             stmt.setInt(1, saleID);
             try (ResultSet rs = stmt.executeQuery()) {
                 sale = mapResultSetToDynamicHomeSale(rs);
@@ -143,7 +144,9 @@ public class SalesDAO extends ADAO {
     public double getAveragePrice(int postCode) throws SQLException {
         try (Connection conn = getConnection(); PreparedStatement stmt = conn
                 .prepareStatement(
-                        "SELECT AVG(purchase_price) AS average FROM property_sales WHERE post_code = ?")) {
+                        """
+                SELECT AVG(purchase_price) AS average 
+                FROM property_sales WHERE post_code = ?""");) {
             stmt.setInt(1, postCode);
             ResultSet rs = stmt.executeQuery();
             System.out.println(rs);

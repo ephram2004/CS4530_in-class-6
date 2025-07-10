@@ -1,5 +1,6 @@
 package app;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -26,17 +27,18 @@ public class REServer {
         // client for sending reqs
         HttpClient client = HttpClient.newHttpClient();
 
-        Javalin.create(config -> {
-            // OpenAPI doc plugins
+        Javalin app = Javalin.create(config -> {
+            // OpenAPI Plugin
             config.registerPlugin(new OpenApiPlugin(pluginConfig -> {
                 pluginConfig.withDefinitionConfiguration((version, definition) -> {
-                    definition.withOpenApiInfo(info -> {
+                    definition.withInfo(info -> {
                         info.setTitle("Real Estate API");
                         info.setVersion("1.0.0");
                         info.setDescription("API for querying property sales");
                     });
                 });
             }));
+
             config.registerPlugin(new SwaggerPlugin());
             config.registerPlugin(new ReDocPlugin());
 
@@ -50,13 +52,15 @@ public class REServer {
                         String councilName = ctx.queryParam("councilname");
                         String propertyType = ctx.queryParam("propertytype");
                         String areaType = ctx.queryParam("areatype");
-                        int minPrice = ctx.queryParam("minprice") != null ? Integer.parseInt(ctx.queryParam("minprice"))
+                        int minPrice = ctx.queryParam("minprice") != null
+                                ? Integer.parseInt(ctx.queryParam("minprice"))
                                 : -1;
-                        int maxPrice = ctx.queryParam("maxprice") != null ? Integer.parseInt(ctx.queryParam("maxprice"))
+                        int maxPrice = ctx.queryParam("maxprice") != null
+                                ? Integer.parseInt(ctx.queryParam("maxprice"))
                                 : -1;
 
-                        boolean hasFilter = councilName != null || propertyType != null || areaType != null
-                                || minPrice >= 0 || maxPrice >= 0;
+                        boolean hasFilter = councilName != null || propertyType != null
+                                || areaType != null || minPrice >= 0 || maxPrice >= 0;
 
                         String url = salesUrl;
                         if (hasFilter) {
@@ -66,7 +70,8 @@ public class REServer {
                                 queryParams.append("councilname=").append(councilName).append("&");
                             }
                             if (propertyType != null) {
-                                queryParams.append("propertytype=").append(propertyType).append("&");
+                                queryParams.append("propertytype=").append(propertyType)
+                                        .append("&");
                             }
                             if (areaType != null) {
                                 queryParams.append("areatype=").append(areaType).append("&");
@@ -88,10 +93,16 @@ public class REServer {
                                     .uri(URI.create(url))
                                     .GET()
                                     .build();
-                            HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
+                            HttpResponse<String> res
+                                    = client.send(req, HttpResponse.BodyHandlers.ofString());
                             ctx.result(res.body());
-                        } catch (Exception e) {
+                        } catch (IllegalArgumentException e) {
+                            ctx.status(400).result("Invalid URL format: " + e.getMessage());
+                        } catch (IOException e) {
+                            ctx.status(503);
                             ctx.result("Error connecting to sales service: " + e.getMessage());
+                        } catch (InterruptedException e) {
+                            ctx.result("Request interrupted: " + e.getMessage());
                             ctx.status(503);
                         }
                     });
@@ -103,10 +114,16 @@ public class REServer {
                                     .POST(HttpRequest.BodyPublishers.ofString(ctx.body()))
                                     .header("Content-Type", "application/json")
                                     .build();
-                            HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
+                            HttpResponse<String> res
+                                    = client.send(req, HttpResponse.BodyHandlers.ofString());
                             ctx.result(res.body());
-                        } catch (Exception e) {
+                        } catch (IllegalArgumentException e) {
+                            ctx.status(400).result("Invalid URL format: " + e.getMessage());
+                        } catch (IOException e) {
+                            ctx.status(503);
                             ctx.result("Error connecting to sales service: " + e.getMessage());
+                        } catch (InterruptedException e) {
+                            ctx.result("Request interrupted: " + e.getMessage());
                             ctx.status(503);
                         }
                     });
@@ -120,16 +137,24 @@ public class REServer {
                                         .uri(URI.create(url))
                                         .GET()
                                         .build();
-                                HttpResponse<String> res = client.send(salesReq, HttpResponse.BodyHandlers.ofString());
+                                HttpResponse<String> res
+                                        = client.send(salesReq,
+                                                HttpResponse.BodyHandlers.ofString());
 
                                 HttpRequest metricsReq = HttpRequest.newBuilder()
-                                        .uri(URI.create(metricsUrl + "postcode/" + postcode + "/numaccessed"))
+                                        .uri(URI.create(metricsUrl + "postcode/"
+                                                + postcode + "/numaccessed"))
                                         .POST(HttpRequest.BodyPublishers.noBody())
                                         .build();
                                 client.send(metricsReq, HttpResponse.BodyHandlers.ofString());
                                 ctx.result(res.body());
-                            } catch (Exception e) {
+                            } catch (IllegalArgumentException e) {
+                                ctx.status(400).result("Invalid URL format: " + e.getMessage());
+                            } catch (IOException e) {
+                                ctx.status(503);
                                 ctx.result("Error connecting to sales service: " + e.getMessage());
+                            } catch (InterruptedException e) {
+                                ctx.result("Request interrupted: " + e.getMessage());
                                 ctx.status(503);
                             }
                         });
@@ -143,17 +168,25 @@ public class REServer {
                                     .uri(URI.create(url))
                                     .GET()
                                     .build();
-                            HttpResponse<String> res = client.send(salesReq, HttpResponse.BodyHandlers.ofString());
+                            HttpResponse<String> res
+                                    = client.send(salesReq, HttpResponse.BodyHandlers.ofString());
 
                             HttpRequest metricsReq = HttpRequest.newBuilder()
-                                    .uri(URI.create(metricsUrl + "postcode/" + postcode + "/numaccessed"))
+                                    .uri(URI.create(metricsUrl + "postcode/"
+                                            + postcode + "/numaccessed"))
                                     .POST(HttpRequest.BodyPublishers.noBody())
                                     .build();
-                            client.send(metricsReq, HttpResponse.BodyHandlers.ofString()); // optional: ignore
+                            client.send(metricsReq,
+                                    HttpResponse.BodyHandlers.ofString()); // optional: ignore
 
                             ctx.result(res.body());
-                        } catch (Exception e) {
+                        } catch (IllegalArgumentException e) {
+                            ctx.status(400).result("Invalid URL format: " + e.getMessage());
+                        } catch (IOException e) {
+                            ctx.status(503);
                             ctx.result("Error connecting to sales service: " + e.getMessage());
+                        } catch (InterruptedException e) {
+                            ctx.result("Request interrupted: " + e.getMessage());
                             ctx.status(503);
                         }
                     }));
@@ -166,17 +199,24 @@ public class REServer {
                                     .uri(URI.create(url))
                                     .GET()
                                     .build();
-                            HttpResponse<String> res = client.send(salesReq, HttpResponse.BodyHandlers.ofString());
+                            HttpResponse<String> res
+                                    = client.send(salesReq, HttpResponse.BodyHandlers.ofString());
 
                             HttpRequest metricsReq = HttpRequest.newBuilder()
-                                    .uri(URI.create(metricsUrl + "propertyid/" + propertyID + "/numaccessed"))
+                                    .uri(URI.create(metricsUrl + "propertyid/"
+                                            + propertyID + "/numaccessed"))
                                     .POST(HttpRequest.BodyPublishers.noBody())
                                     .build();
                             client.send(metricsReq, HttpResponse.BodyHandlers.ofString());
 
                             ctx.result(res.body());
-                        } catch (Exception e) {
+                        } catch (IllegalArgumentException e) {
+                            ctx.status(400).result("Invalid URL format: " + e.getMessage());
+                        } catch (IOException e) {
+                            ctx.status(503);
                             ctx.result("Error connecting to sales service: " + e.getMessage());
+                        } catch (InterruptedException e) {
+                            ctx.result("Request interrupted: " + e.getMessage());
                             ctx.status(503);
                         }
                     }));
@@ -189,17 +229,24 @@ public class REServer {
                                     .uri(URI.create(url))
                                     .GET()
                                     .build();
-                            HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
+                            HttpResponse<String> res
+                                    = client.send(req, HttpResponse.BodyHandlers.ofString());
 
                             HttpRequest metricsReq = HttpRequest.newBuilder()
-                                    .uri(URI.create(metricsUrl + "saleid/" + saleID + "/numaccessed"))
+                                    .uri(URI.create(metricsUrl + "saleid/"
+                                            + saleID + "/numaccessed"))
                                     .POST(HttpRequest.BodyPublishers.noBody())
                                     .build();
                             client.send(metricsReq, HttpResponse.BodyHandlers.ofString());
 
                             ctx.result(res.body());
-                        } catch (Exception e) {
+                        } catch (IllegalArgumentException e) {
+                            ctx.status(400).result("Invalid URL format: " + e.getMessage());
+                        } catch (IOException e) {
+                            ctx.status(503);
                             ctx.result("Error connecting to sales service: " + e.getMessage());
+                        } catch (InterruptedException e) {
+                            ctx.result("Request interrupted: " + e.getMessage());
                             ctx.status(503);
                         }
                     }));
@@ -215,17 +262,26 @@ public class REServer {
                                         .uri(URI.create(url))
                                         .GET()
                                         .build();
-                                HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
+                                HttpResponse<String> res
+                                        = client.send(req, HttpResponse.BodyHandlers.ofString());
                                 ctx.result(res.body());
-                            } catch (Exception e) {
-                                ctx.result("Error connecting to metrics service: " + e.getMessage());
+                            } catch (IllegalArgumentException e) {
+                                ctx.status(400).result("Invalid URL format: " + e.getMessage());
+                            } catch (IOException e) {
+                                ctx.status(503);
+                                ctx.result("Error connecting to sales service: " + e.getMessage());
+                            } catch (InterruptedException e) {
+                                ctx.result("Request interrupted: " + e.getMessage());
                                 ctx.status(503);
                             }
                         });
                     });
                 });
             });
-        }).start(7070);
+        }
+        );
+
+        app.start(7070);
 
         // Console output
         System.out.println(

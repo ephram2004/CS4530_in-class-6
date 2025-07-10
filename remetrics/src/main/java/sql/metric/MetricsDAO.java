@@ -18,14 +18,12 @@ import sqlobjs.ADAO;
 public class MetricsDAO extends ADAO {
 
     public void addOrIncrementNumAccessed(Metric metric) throws SQLException {
-        try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(
-                "INSERT INTO public.metrics (metric_name, metric_id, num_accessed)\n"
-                + //
-                "VALUES (?, ?, 1)\n"
-                + //
-                "ON CONFLICT (metric_name, metric_id)\n"
-                + //
-                "DO UPDATE SET num_accessed = metrics.num_accessed + 1;")) {
+        try (Connection conn = getConnection(); PreparedStatement stmt
+                = conn.prepareStatement(""" 
+                INSERT INTO public.metrics 
+                (metric_name, metric_id, num_accessed) VALUES (?, ?, 1) ON CONFLICT 
+                (metric_name, metric_id) DO UPDATE SET num_accessed = metrics.num_accessed + 1;"""
+                )) {
             stmt.setString(1, metric.getMetricName());
             stmt.setString(2, metric.getMetricID());
             stmt.executeUpdate();
@@ -36,7 +34,8 @@ public class MetricsDAO extends ADAO {
         String sql = "SELECT * FROM metrics WHERE metric_id = ? AND metric_name = ?";
         Metric metric = null;
         try (
-                Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+                Connection conn = getConnection(); PreparedStatement stmt
+                = conn.prepareStatement(sql)) {
             stmt.setString(1, metricID);
             stmt.setString(2, metricName);
             try (ResultSet rs = stmt.executeQuery()) {

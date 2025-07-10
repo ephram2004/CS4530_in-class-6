@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import credentials.Credentials;
 import helper.CSVToJson;
-import helper.Helper;
+import helper.DataLoaderHelper;
 import sql.sales.DynamicHomeSale;
 
 // TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
@@ -66,7 +66,8 @@ public class Main {
                     for (final CSVRecord record : parser) {
                         String key = "sale_id:" + saleId;
 
-                        Integer propId = Helper.parseIntSafe(record.get("property_id"));
+                        Integer propId = DataLoaderHelper
+                                .parseIntSafe(record.get("property_id"));
                         if (propId == null) {
                             skippedRows.add(record);
                             continue;

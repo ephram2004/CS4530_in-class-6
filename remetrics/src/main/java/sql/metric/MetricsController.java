@@ -42,8 +42,12 @@ public class MetricsController {
             metrics.addOrIncrementNumAccessed(new Metric(node));
 
             System.out.println("Number of visits metric updated");
-        } catch (Exception e) {
-            System.out.println("Failed to add metric: " + e.getMessage());
+        } catch (NullPointerException e) {
+            System.out.println("Null pointer error while adding metric: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            System.out.println("Invalid argument when creating metric: " + e.getMessage());
+        } catch (SQLException e) {
+            System.out.println("Error accessing SQL database: " + e.getMessage());
         }
     }
 

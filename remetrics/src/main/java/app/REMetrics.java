@@ -5,6 +5,10 @@ import io.javalin.Javalin;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
 import static io.javalin.apibuilder.ApiBuilder.post;
+
+import org.apache.kafka.common.metrics.KafkaMetric;
+
+import app.kafka.KafkaMetricSub;
 import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.redoc.ReDocPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
@@ -21,6 +25,9 @@ public class REMetrics {
         // DAO and Controller setup
         var metricsDAO = new MetricsDAO();
         MetricsController metricsHandler = new MetricsController(metricsDAO);
+
+        KafkaMetricSub sub = new KafkaMetricSub();
+        new Thread(() -> sub.run(metricsHandler)).start();
 
         // Start server
         Javalin.create(config -> {
@@ -49,8 +56,7 @@ public class REMetrics {
                                 ctx,
                                 ctx.pathParam("metric_name"),
                                 ctx.pathParam("metric_id"),
-                                ctx.pathParam("attribute")
-                        );
+                                ctx.pathParam("attribute"));
                     });
 
                     post(ctx -> {

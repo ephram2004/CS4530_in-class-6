@@ -93,8 +93,7 @@ public class REServer {
                                     .uri(URI.create(url))
                                     .GET()
                                     .build();
-                            HttpResponse<String> res
-                                    = client.send(req, HttpResponse.BodyHandlers.ofString());
+                            HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
                             ctx.result(res.body());
                         } catch (IllegalArgumentException e) {
                             ctx.status(400).result("Invalid URL format: " + e.getMessage());
@@ -114,8 +113,7 @@ public class REServer {
                                     .POST(HttpRequest.BodyPublishers.ofString(ctx.body()))
                                     .header("Content-Type", "application/json")
                                     .build();
-                            HttpResponse<String> res
-                                    = client.send(req, HttpResponse.BodyHandlers.ofString());
+                            HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
                             ctx.result(res.body());
                         } catch (IllegalArgumentException e) {
                             ctx.status(400).result("Invalid URL format: " + e.getMessage());
@@ -137,16 +135,8 @@ public class REServer {
                                         .uri(URI.create(url))
                                         .GET()
                                         .build();
-                                HttpResponse<String> res
-                                        = client.send(salesReq,
-                                                HttpResponse.BodyHandlers.ofString());
-
-                                HttpRequest metricsReq = HttpRequest.newBuilder()
-                                        .uri(URI.create(metricsUrl + "postcode/"
-                                                + postcode + "/numaccessed"))
-                                        .POST(HttpRequest.BodyPublishers.noBody())
-                                        .build();
-                                client.send(metricsReq, HttpResponse.BodyHandlers.ofString());
+                                HttpResponse<String> res = client.send(salesReq,
+                                        HttpResponse.BodyHandlers.ofString());
                                 ctx.result(res.body());
                             } catch (IllegalArgumentException e) {
                                 ctx.status(400).result("Invalid URL format: " + e.getMessage());
@@ -168,16 +158,7 @@ public class REServer {
                                     .uri(URI.create(url))
                                     .GET()
                                     .build();
-                            HttpResponse<String> res
-                                    = client.send(salesReq, HttpResponse.BodyHandlers.ofString());
-
-                            HttpRequest metricsReq = HttpRequest.newBuilder()
-                                    .uri(URI.create(metricsUrl + "postcode/"
-                                            + postcode + "/numaccessed"))
-                                    .POST(HttpRequest.BodyPublishers.noBody())
-                                    .build();
-                            client.send(metricsReq,
-                                    HttpResponse.BodyHandlers.ofString()); // optional: ignore
+                            HttpResponse<String> res = client.send(salesReq, HttpResponse.BodyHandlers.ofString());
 
                             ctx.result(res.body());
                         } catch (IllegalArgumentException e) {
@@ -199,15 +180,7 @@ public class REServer {
                                     .uri(URI.create(url))
                                     .GET()
                                     .build();
-                            HttpResponse<String> res
-                                    = client.send(salesReq, HttpResponse.BodyHandlers.ofString());
-
-                            HttpRequest metricsReq = HttpRequest.newBuilder()
-                                    .uri(URI.create(metricsUrl + "propertyid/"
-                                            + propertyID + "/numaccessed"))
-                                    .POST(HttpRequest.BodyPublishers.noBody())
-                                    .build();
-                            client.send(metricsReq, HttpResponse.BodyHandlers.ofString());
+                            HttpResponse<String> res = client.send(salesReq, HttpResponse.BodyHandlers.ofString());
 
                             ctx.result(res.body());
                         } catch (IllegalArgumentException e) {
@@ -229,15 +202,7 @@ public class REServer {
                                     .uri(URI.create(url))
                                     .GET()
                                     .build();
-                            HttpResponse<String> res
-                                    = client.send(req, HttpResponse.BodyHandlers.ofString());
-
-                            HttpRequest metricsReq = HttpRequest.newBuilder()
-                                    .uri(URI.create(metricsUrl + "saleid/"
-                                            + saleID + "/numaccessed"))
-                                    .POST(HttpRequest.BodyPublishers.noBody())
-                                    .build();
-                            client.send(metricsReq, HttpResponse.BodyHandlers.ofString());
+                            HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
 
                             ctx.result(res.body());
                         } catch (IllegalArgumentException e) {
@@ -262,8 +227,7 @@ public class REServer {
                                         .uri(URI.create(url))
                                         .GET()
                                         .build();
-                                HttpResponse<String> res
-                                        = client.send(req, HttpResponse.BodyHandlers.ofString());
+                                HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
                                 ctx.result(res.body());
                             } catch (IllegalArgumentException e) {
                                 ctx.status(400).result("Invalid URL format: " + e.getMessage());
@@ -278,8 +242,7 @@ public class REServer {
                     });
                 });
             });
-        }
-        );
+        });
 
         app.start(7070);
 

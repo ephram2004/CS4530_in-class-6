@@ -16,6 +16,8 @@ import io.javalin.openapi.OpenApiParam;
 import io.javalin.openapi.OpenApiRequestBody;
 import io.javalin.openapi.OpenApiResponse;
 
+import kafka.REKafka;
+
 public class SalesController {
 
     private final SalesDAO homeSales;
@@ -24,29 +26,29 @@ public class SalesController {
         this.homeSales = homeSales;
     }
 
-    @OpenApi(summary = "Create a new home sale", operationId = "createSale",
-            path = "/sales", methods = HttpMethod.POST, tags = {"Sales"},
-            requestBody = @OpenApiRequestBody(content = {
-        @OpenApiContent(from = DynamicHomeSale.class)}), responses = {
-                @OpenApiResponse(status = "201"),
-                @OpenApiResponse(status = "400")
-            })
+    @OpenApi(summary = "Create a new home sale", operationId = "createSale", path = "/sales", methods = HttpMethod.POST, tags = {
+            "Sales" }, requestBody = @OpenApiRequestBody(content = {
+                    @OpenApiContent(from = DynamicHomeSale.class) }), responses = {
+                            @OpenApiResponse(status = "201"),
+                            @OpenApiResponse(status = "400")
+                    })
     // implements POST /sales
     public void createSale(Context ctx) {
 
         ObjectMapper mapper = new ObjectMapper();
 
-        /*try {
-            JsonNode jsonSalesArray = mapper.readTree(ctx.body());
-            List<DynamicHomeSale> salesList = new ArrayList<>();
-            for (JsonNode sale : jsonSalesArray) {
-                DynamicHomeSale homeSale = new DynamicHomeSale(sale);
-                salesList.add(homeSale);
-            }
-        } catch (Exception e) {
-            ctx.status(400);
-            return;
-        }
+        /*
+         * try {
+         * JsonNode jsonSalesArray = mapper.readTree(ctx.body());
+         * List<DynamicHomeSale> salesList = new ArrayList<>();
+         * for (JsonNode sale : jsonSalesArray) {
+         * DynamicHomeSale homeSale = new DynamicHomeSale(sale);
+         * salesList.add(homeSale);
+         * }
+         * } catch (Exception e) {
+         * ctx.status(400);
+         * return;
+         * }
          */
         // Extract Home Sale from request body
         // TO DO override Validator exception method to report better error message
@@ -65,11 +67,11 @@ public class SalesController {
         }
     }
 
-    @OpenApi(summary = "Get all sales", operationId = "getAllSales", path = "/sales",
-            methods = HttpMethod.GET, tags = {"Sales"}, responses = {
-                @OpenApiResponse(status = "200", content = {
-            @OpenApiContent(from = DynamicHomeSale[].class)}),
-                @OpenApiResponse(status = "404")
+    @OpenApi(summary = "Get all sales", operationId = "getAllSales", path = "/sales", methods = HttpMethod.GET, tags = {
+            "Sales" }, responses = {
+                    @OpenApiResponse(status = "200", content = {
+                            @OpenApiContent(from = DynamicHomeSale[].class) }),
+                    @OpenApiResponse(status = "404")
             })
     // implements Get /sales
     public void getAllSales(Context ctx) {
@@ -88,18 +90,19 @@ public class SalesController {
         }
     }
 
-    @OpenApi(summary = "Get sale by ID", operationId = "getSaleById", path = "/sales/{saleID}",
-            methods = HttpMethod.GET, tags = {"Sales"}, pathParams = {
-                @OpenApiParam(name = "saleID")
+    @OpenApi(summary = "Get sale by ID", operationId = "getSaleById", path = "/sales/{saleID}", methods = HttpMethod.GET, tags = {
+            "Sales" }, pathParams = {
+                    @OpenApiParam(name = "saleID")
             }, responses = {
-                @OpenApiResponse(status = "200", content = {
-            @OpenApiContent(from = DynamicHomeSale.class)}),
-                @OpenApiResponse(status = "404")
+                    @OpenApiResponse(status = "200", content = {
+                            @OpenApiContent(from = DynamicHomeSale.class) }),
+                    @OpenApiResponse(status = "404")
             })
     // implements GET /sales/{saleID}
     public void getSaleByID(Context ctx, int id) {
         try {
             Optional<DynamicHomeSale> sale = homeSales.getSaleById(id);
+            REKafka.send("metrics", "saleid:" + id, "num_accessed");
             sale.map(ctx::json).orElseGet(() -> {
                 ctx.result("Sale not found");
                 ctx.status(404);
@@ -111,14 +114,13 @@ public class SalesController {
         }
     }
 
-    @OpenApi(summary = "Get sales by postcode", operationId = "getSalesByPostcode",
-            path = "/sales/postcode/{postcode}", methods = HttpMethod.GET, tags = {"Sales"},
-            pathParams = {
-                @OpenApiParam(name = "postcode")
+    @OpenApi(summary = "Get sales by postcode", operationId = "getSalesByPostcode", path = "/sales/postcode/{postcode}", methods = HttpMethod.GET, tags = {
+            "Sales" }, pathParams = {
+                    @OpenApiParam(name = "postcode")
             }, responses = {
-                @OpenApiResponse(status = "200", content = {
-            @OpenApiContent(from = DynamicHomeSale[].class)}),
-                @OpenApiResponse(status = "404")
+                    @OpenApiResponse(status = "200", content = {
+                            @OpenApiContent(from = DynamicHomeSale[].class) }),
+                    @OpenApiResponse(status = "404")
             })
     // Implements GET /sales/postcode/{postcodeID}
     public void findSaleByPostCode(Context ctx, int postCode) {
@@ -130,6 +132,7 @@ public class SalesController {
             } else {
                 ctx.json(sales);
                 ctx.status(200);
+                REKafka.send("metrics", "postcode:" + postCode, "num_accessed");
             }
         } catch (SQLException e) {
             ctx.result("Error retrieving sale: " + e.getMessage());
@@ -137,13 +140,12 @@ public class SalesController {
         }
     }
 
-    @OpenApi(summary = "Get price history (diff) by property ID", operationId = "getPriceHistory",
-            path = "/sales/propertyId/{propertyID}", methods = HttpMethod.GET, tags = {"Sales"},
-            pathParams = {
-                @OpenApiParam(name = "propertyID")
+    @OpenApi(summary = "Get price history (diff) by property ID", operationId = "getPriceHistory", path = "/sales/propertyId/{propertyID}", methods = HttpMethod.GET, tags = {
+            "Sales" }, pathParams = {
+                    @OpenApiParam(name = "propertyID")
             }, responses = {
-                @OpenApiResponse(status = "200"),
-                @OpenApiResponse(status = "400")
+                    @OpenApiResponse(status = "200"),
+                    @OpenApiResponse(status = "400")
             })
     public void findPriceHistoryByPropertyId(Context ctx, int propertyId) {
         try {
@@ -155,20 +157,19 @@ public class SalesController {
         }
     }
 
-    @OpenApi(summary = "Filter sales by criteria", operationId = "filterSales",
-            path = "/sales", // If you're keeping
+    @OpenApi(summary = "Filter sales by criteria", operationId = "filterSales", path = "/sales", // If you're keeping
             // filters as query
             // params on /sales
-            methods = HttpMethod.GET, tags = {"Sales"}, queryParams = {
-                @OpenApiParam(name = "councilname", required = false),
-                @OpenApiParam(name = "propertytype", required = false),
-                @OpenApiParam(name = "areatype", required = false),
-                @OpenApiParam(name = "minprice", required = false),
-                @OpenApiParam(name = "maxprice", required = false)
+            methods = HttpMethod.GET, tags = { "Sales" }, queryParams = {
+                    @OpenApiParam(name = "councilname", required = false),
+                    @OpenApiParam(name = "propertytype", required = false),
+                    @OpenApiParam(name = "areatype", required = false),
+                    @OpenApiParam(name = "minprice", required = false),
+                    @OpenApiParam(name = "maxprice", required = false)
             }, responses = {
-                @OpenApiResponse(status = "200", content = {
-            @OpenApiContent(from = DynamicHomeSale[].class)}),
-                @OpenApiResponse(status = "404")
+                    @OpenApiResponse(status = "200", content = {
+                            @OpenApiContent(from = DynamicHomeSale[].class) }),
+                    @OpenApiResponse(status = "404")
             })
     public void filterSalesByCriteria(Context ctx, String councilName, String propertyType,
             int minPrice, int maxPrice, String areaType) {
@@ -189,18 +190,18 @@ public class SalesController {
         }
     }
 
-    @OpenApi(summary = "Get average sale price by postcode", operationId = "getAveragePrice",
-            path = "/sales/average/{postcode}", methods = HttpMethod.GET, tags = {"Sales"},
-            pathParams = {
-                @OpenApiParam(name = "postcode")
+    @OpenApi(summary = "Get average sale price by postcode", operationId = "getAveragePrice", path = "/sales/average/{postcode}", methods = HttpMethod.GET, tags = {
+            "Sales" }, pathParams = {
+                    @OpenApiParam(name = "postcode")
             }, responses = {
-                @OpenApiResponse(status = "200"),
-                @OpenApiResponse(status = "400")
+                    @OpenApiResponse(status = "200"),
+                    @OpenApiResponse(status = "400")
             })
     public void averagePrice(Context ctx, int postCode) {
         try {
             double averagePrice = homeSales.getAveragePrice(postCode);
             ctx.result(Double.toString(averagePrice));
+            REKafka.send("metrics", "postcode:" + postCode, "num_accessed");
         } catch (SQLException e) {
             ctx.result("Error getting average: " + e.getMessage());
             ctx.status(400);
